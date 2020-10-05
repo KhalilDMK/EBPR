@@ -27,6 +27,8 @@ BPR_config = {'alias': 'BPR_' + dataset_name,
               'top_k': 10,  # k in MAP@k, HR@k and NDCG@k.
               'loo_eval': False,  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
               # evaluation with MAP@k and NDCG@k.
+              'neighborhood': 5,  # Neighborhood size for explainability.
+              'epsilon': 0.001,  # Epsilon smoothing parameter in explainability matrix.
               'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}.model',
               'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}.model'}
 
@@ -38,6 +40,9 @@ evaluation_data = sample_generator.test_data_loader(config['batch_size'])
 
 # Specify the exact model
 engine = BPREngine(config)
+
+#Create explainability matrix
+explainability_matrix = sample_generator.create_explainability_matrix()
 
 # Initialize list of optimal results
 best_performance = [0] * 3

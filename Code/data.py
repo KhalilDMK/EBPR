@@ -5,6 +5,7 @@ import pandas as pd
 from copy import deepcopy
 from torch.utils.data import DataLoader, Dataset
 from sklearn.model_selection import train_test_split
+from sklearn.metrics.pairwise import pairwise_distances
 
 random.seed(0)
 
@@ -194,3 +195,12 @@ class SampleGenerator(object):
                                                 item_tensor=torch.LongTensor(test_items),
                                                 target_tensor=torch.FloatTensor(test_ratings))
             return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
+    def create_explainability_matrix(self):
+        """create explainability matrix"""
+        interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[list(range(self.config['num_items']))].sort_index())
+        item_similarity_matrix = 1 - pairwise_distances(interaction_matrix.T, metric = "hamming")
+        np.fill_diagonal(item_similarity_matrix, 0)
+        neighborhood = [np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:] for row in item_similarity_matrix]
+        explainability_matrix = np.array([[sum([interaction_matrix[user, neighbor] for neighbor in neighborhood[item]]) for item in range(self.config['num_items'])] for user in range(self.config['num_users'])]) / self.config['neighborhood'] + self.config['epsilon']
+        return explainability_matrix
