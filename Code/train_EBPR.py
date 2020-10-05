@@ -1,4 +1,4 @@
-from Code.BPR_model import BPREngine
+from Code.EBPR_model import BPREngine
 from Code.data import SampleGenerator, read_data
 
 # Read dataset
@@ -38,11 +38,11 @@ config = BPR_config
 sample_generator = SampleGenerator(dataset, config)
 evaluation_data = sample_generator.test_data_loader(config['batch_size'])
 
-# Specify the exact model
-engine = BPREngine(config)
-
 #Create explainability matrix
 explainability_matrix = sample_generator.create_explainability_matrix()
+
+# Specify the exact model
+engine = BPREngine(config)
 
 # Initialize list of optimal results
 best_performance = [0] * 3
@@ -51,7 +51,7 @@ best_model = ''
 for epoch in range(config['num_epoch']):
     print('Training epoch {}'.format(epoch))
     train_loader = sample_generator.train_data_loader(config['batch_size'])
-    engine.train_an_epoch(train_loader, epoch_id=epoch)
+    engine.train_an_epoch(train_loader, explainability_matrix, epoch_id=epoch)
     if config['loo_eval']:
         hr, ndcg = engine.evaluate(evaluation_data, epoch_id=epoch)
         print('-' * 80)
