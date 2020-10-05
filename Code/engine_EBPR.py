@@ -12,13 +12,13 @@ class Engine(object):
         self._metron = MetronAtK(top_k=config['top_k'], loo_eval=self.config['loo_eval'])
         self.opt = use_optimizer(self.model, config)
 
-    def train_single_batch_BPR(self, users, pos_items, neg_items, ratings):
+    def train_single_batch_EBPR(self, users, pos_items, neg_items, ratings, explainability_matrix):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
         if self.config['use_cuda'] is True:
             users, pos_items, neg_items, ratings = users.cuda(), pos_items.cuda(), neg_items.cuda(), ratings.cuda()
         self.opt.zero_grad()
         pos_prediction, neg_prediction = self.model(users, pos_items, neg_items)
-        loss = - (pos_prediction - neg_prediction).sigmoid().log().sum()
+        loss = - ((pos_prediction - neg_prediction).sigmoid().log() * explainability_matrix[users, pos_items] / explainability_matrix[users, neg_items]).sum()
         if self.config['l2_regularization'] > 0:
             l2_reg = 0
             for param in self.model.parameters():
@@ -29,16 +29,18 @@ class Engine(object):
         loss = loss.item()
         return loss
 
-    def train_an_epoch(self, train_loader, epoch_id):
+    def train_an_epoch(self, train_loader, explainability_matrix, epoch_id):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
         self.model.train()
+        if self.config['use_cuda'] is True:
+            explainability_matrix = torch.from_numpy(explainability_matrix).float().cuda()
         total_loss = 0
         bar = pyprind.ProgBar(len(train_loader))
         for batch_id, batch in enumerate(train_loader):
             bar.update()
             assert isinstance(batch[0], torch.LongTensor)
             user, pos_item, neg_item, rating = batch[0], batch[1], batch[2], batch[3]
-            loss = self.train_single_batch_BPR(user, pos_item, neg_item, rating)
+            loss = self.train_single_batch_EBPR(user, pos_item, neg_item, rating, explainability_matrix)
             total_loss += loss
 
     def evaluate(self, evaluate_data, epoch_id):
