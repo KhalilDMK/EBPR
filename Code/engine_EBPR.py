@@ -18,7 +18,8 @@ class Engine(object):
             users, pos_items, neg_items, ratings = users.cuda(), pos_items.cuda(), neg_items.cuda(), ratings.cuda()
         self.opt.zero_grad()
         pos_prediction, neg_prediction = self.model(users, pos_items, neg_items)
-        loss = - ((pos_prediction - neg_prediction).sigmoid().log() * explainability_matrix[users, pos_items] / explainability_matrix[users, neg_items]).sum()
+        loss = - ((pos_prediction - neg_prediction).sigmoid().log() * explainability_matrix[users, pos_items] * (1 - explainability_matrix[users, neg_items])).sum()
+        #loss = - (pos_prediction - neg_prediction).sigmoid().log().sum()
         if self.config['l2_regularization'] > 0:
             l2_reg = 0
             for param in self.model.parameters():
@@ -43,7 +44,7 @@ class Engine(object):
             loss = self.train_single_batch_EBPR(user, pos_item, neg_item, rating, explainability_matrix)
             total_loss += loss
 
-    def evaluate(self, evaluate_data, epoch_id):
+    def evaluate(self, evaluate_data, explainability_matrix, epoch_id):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
         if self.config['loo_eval']:
             test_users_eval, test_items_eval, test_scores_eval, negative_users_eval, negative_items_eval, negative_scores_eval = [], [], [], [], [], []
@@ -74,10 +75,10 @@ class Engine(object):
                         negative_scores_eval += negative_scores.cpu().data.view(-1).tolist()
                 self._metron.subjects = [test_users_eval, test_items_eval, test_scores_eval, negative_users_eval,
                                          negative_items_eval, negative_scores_eval]
-                hr, ndcg = self._metron.cal_hit_ratio_loo(), self._metron.cal_ndcg_loo()
-                print('Evaluating Epoch {}: NDCG@{} = {:.4f}, HR@{} = {:.4f}'.format(epoch_id, self.config['top_k'],
-                                                                                     ndcg, self.config['top_k'], hr))
-                return ndcg, hr
+                hr, ndcg, mep, wmep = self._metron.cal_hit_ratio_loo(), self._metron.cal_ndcg_loo(), self._metron.cal_mep(explainability_matrix, theta=0), self._metron.cal_weighted_mep(explainability_matrix, theta=0)
+                print('Evaluating Epoch {}: NDCG@{} = {:.4f}, HR@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}'.format(epoch_id, self.config['top_k'],
+                                                                                     ndcg, self.config['top_k'], hr, self.config['top_k'], mep, self.config['top_k'], wmep))
+                return ndcg, hr, mep
             else:
                 for batch_id, batch in enumerate(evaluate_data):
                     test_users, test_items, test_output = batch[0], batch[1], batch[2]
@@ -92,9 +93,9 @@ class Engine(object):
                         test_scores_eval += test_scores.cpu().data.view(-1).tolist()
                         test_output_eval += test_output.cpu().data.view(-1).tolist()
             self._metron.subjects = [test_users_eval, test_items_eval, test_output_eval, test_scores_eval]
-            map, ndcg = self._metron.cal_map_at_k(), self._metron.cal_ndcg()
-            print('Evaluating Epoch {}: MAP@{} = {:.4f}, NDCG@{} = {:.4f}'.format(epoch_id, self.config['top_k'], map, self.config['top_k'], ndcg))
-            return map, ndcg
+            map, ndcg, mep, wmep = self._metron.cal_map_at_k(), self._metron.cal_ndcg(), self._metron.cal_mep(explainability_matrix, theta=0), self._metron.cal_weighted_mep(explainability_matrix, theta=0)
+            print('Evaluating Epoch {}: MAP@{} = {:.4f}, NDCG@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}'.format(epoch_id, self.config['top_k'], map, self.config['top_k'], ndcg, self.config['top_k'], mep, self.config['top_k'], wmep))
+            return map, ndcg, mep
 
     def save_explicit(self, alias, epoch_id, map, ndcg, num_epoch, best_model, best_performance):
         assert hasattr(self, 'model'), 'Please specify the exact model !'

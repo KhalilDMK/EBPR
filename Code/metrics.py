@@ -95,3 +95,19 @@ class MetronAtK(object):
         test_in_top_k['ndcg'] = test_in_top_k['rank'].apply(
             lambda x: math.log(2) / math.log(1 + x))  # the rank starts from 1
         return test_in_top_k['ndcg'].sum() * 1.0 / full['user'].nunique()
+
+    def cal_mep(self, explainability_matrix, theta):
+        """Mean Explainability Precision at cutoff top_k and threshold theta"""
+        full, top_k = self._subjects, self._top_k
+        full['exp_score'] = full[['user', 'item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
+        full['exp_and_rec'] = ((full['exp_score'] > theta) & (full['rank'] <= top_k)) * 1
+        full['topN'] = (full['rank'] <= top_k) * 1
+        return np.mean(full.groupby('user')['exp_and_rec'].sum() / full.groupby('user')['topN'].sum())
+
+    def cal_weighted_mep(self, explainability_matrix, theta):
+        """Weighted Mean Explainability Precision at cutoff top_k and threshold theta"""
+        full, top_k = self._subjects, self._top_k
+        full['exp_score'] = full[['user', 'item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
+        full['exp_and_rec'] = ((full['exp_score'] > theta) & (full['rank'] <= top_k)) * 1 * (full['exp_score'])
+        full['topN'] = (full['rank'] <= top_k) * 1
+        return np.mean(full.groupby('user')['exp_and_rec'].sum() / full.groupby('user')['topN'].sum())
