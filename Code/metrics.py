@@ -99,7 +99,10 @@ class MetronAtK(object):
     def cal_mep(self, explainability_matrix, theta):
         """Mean Explainability Precision at cutoff top_k and threshold theta"""
         full, top_k = self._subjects, self._top_k
-        full['exp_score'] = full[['user', 'item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
+        if self.loo_eval == True:
+            full['exp_score'] = full[['user', 'item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
+        else:
+            full['exp_score'] = full[['user', 'test_item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
         full['exp_and_rec'] = ((full['exp_score'] > theta) & (full['rank'] <= top_k)) * 1
         full['topN'] = (full['rank'] <= top_k) * 1
         return np.mean(full.groupby('user')['exp_and_rec'].sum() / full.groupby('user')['topN'].sum())
@@ -107,7 +110,10 @@ class MetronAtK(object):
     def cal_weighted_mep(self, explainability_matrix, theta):
         """Weighted Mean Explainability Precision at cutoff top_k and threshold theta"""
         full, top_k = self._subjects, self._top_k
-        full['exp_score'] = full[['user', 'item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
+        if self.loo_eval == True:
+            full['exp_score'] = full[['user', 'item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
+        else:
+            full['exp_score'] = full[['user', 'test_item']].apply(lambda x: explainability_matrix[x[0], x[1]].item(), axis=1)
         full['exp_and_rec'] = ((full['exp_score'] > theta) & (full['rank'] <= top_k)) * 1 * (full['exp_score'])
         full['topN'] = (full['rank'] <= top_k) * 1
         return np.mean(full.groupby('user')['exp_and_rec'].sum() / full.groupby('user')['topN'].sum())

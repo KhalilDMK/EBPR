@@ -199,12 +199,37 @@ class SampleGenerator(object):
 
     def create_explainability_matrix(self):
         """create explainability matrix"""
-        interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[list(range(self.config['num_items']))].sort_index())
+        print('Creating explainability matrix...')
+        interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
+                                          list(range(self.config['num_items']))].sort_index())
         #item_similarity_matrix = 1 - pairwise_distances(interaction_matrix.T, metric = "hamming")
         item_similarity_matrix = cosine_similarity(interaction_matrix.T)
         np.fill_diagonal(item_similarity_matrix, 0)
-        neighborhood = [np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:] for row in item_similarity_matrix]
-        explainability_matrix = np.array([[sum([interaction_matrix[user, neighbor] for neighbor in neighborhood[item]]) for item in range(self.config['num_items'])] for user in range(self.config['num_users'])]) / self.config['neighborhood']
+        neighborhood = [np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:]
+                        for row in item_similarity_matrix]
+        explainability_matrix = np.array([[sum([interaction_matrix[user, neighbor] for neighbor in neighborhood[item]])
+                                           for item in range(self.config['num_items'])] for user in
+                                          range(self.config['num_users'])]) / self.config['neighborhood']
         #explainability_matrix[explainability_matrix < 0.1] = 0
         #explainability_matrix = explainability_matrix + self.config['epsilon']
         return explainability_matrix
+
+    def create_popularity_vector(self):
+        """create popularity vector"""
+        print('Creating popularity vector...')
+        interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
+                                          list(range(self.config['num_items']))].sort_index())
+        popularity_vector = np.sum(interaction_matrix, axis=0)
+        popularity_vector = (popularity_vector / max(popularity_vector)) + 1
+        return popularity_vector
+
+    def create_neighborhood(self):
+        """Determine item neighbors"""
+        print('Determining item neighborhoods...')
+        interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
+                                          list(range(self.config['num_items']))].sort_index())
+        item_similarity_matrix = cosine_similarity(interaction_matrix.T)
+        np.fill_diagonal(item_similarity_matrix, 0)
+        neighborhood = np.array([np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:]
+                        for row in item_similarity_matrix])
+        return neighborhood
