@@ -6,33 +6,31 @@ dataset_name = 'ml-100k'  # For Movielens 100K. Also try 'ml-1m' for the Moviele
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
-BPR_config = {'model': 'BPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUBPR', 'UEBPR'.
-              'dataset': dataset_name,
-              'num_epoch': 5,  # Number of training epochs.
-              'batch_size': 500,  # Batch size.
-              'lr': 0.001,  # Learning rate.
-              #'optimizer': 'sgd',
-              #'sgd_momentum': 0.9,
-              #'optimizer': 'rmsprop',
-              #'rmsprop_alpha': 0.99,
-              #'rmsprop_momentum': 0,
-              'optimizer': 'adam',
-              'num_users': len(dataset['userId'].unique()),
-              'num_items': len(dataset['itemId'].unique()),
-              'test_rate': 0.2,  # Test rate for random train/test split. Used when 'loo_eval' is set to False.
-              'num_latent': 10,  # Number of latent factors.
-              'weight_decay': 0,
-              'l2_regularization': 0,
-              'use_cuda': True,
-              'device_id': 0,
-              'top_k': 10,  # k in MAP@k, HR@k and NDCG@k.
-              'loo_eval': True,  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
-              # evaluation with MAP@k and NDCG@k.
-              'neighborhood': 10,  # Neighborhood size for explainability.
-              'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model',
-              'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model'}
-
-config = BPR_config
+config = {'model': 'BPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUBPR', 'UEBPR'.
+          'dataset': dataset_name,
+          'num_epoch': 5,  # Number of training epochs.
+          'batch_size': 500,  # Batch size.
+          'lr': 0.001,  # Learning rate.
+          #'optimizer': 'sgd',
+          #'sgd_momentum': 0.9,
+          #'optimizer': 'rmsprop',
+          #'rmsprop_alpha': 0.99,
+          #'rmsprop_momentum': 0,
+          'optimizer': 'adam',
+          'num_users': len(dataset['userId'].unique()),
+          'num_items': len(dataset['itemId'].unique()),
+          'test_rate': 0.2,  # Test rate for random train/test split. Used when 'loo_eval' is set to False.
+          'num_latent': 10,  # Number of latent factors.
+          'weight_decay': 0,
+          'l2_regularization': 0,
+          'use_cuda': True,
+          'device_id': 0,
+          'top_k': 10,  # k in MAP@k, HR@k and NDCG@k.
+          'loo_eval': True,  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
+          # evaluation with MAP@k and NDCG@k.
+          'neighborhood': 10,  # Neighborhood size for explainability.
+          'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model',
+          'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model'}
 
 # DataLoader
 sample_generator = SampleGenerator(dataset, config)
