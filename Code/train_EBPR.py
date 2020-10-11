@@ -6,9 +6,9 @@ dataset_name = 'ml-100k'  # For Movielens 100K. Also try 'ml-1m' for the Moviele
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
-config = {'model': 'BPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUBPR', 'UEBPR'.
+config = {'model': 'pUEBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
           'dataset': dataset_name,
-          'num_epoch': 5,  # Number of training epochs.
+          'num_epoch': 50,  # Number of training epochs.
           'batch_size': 500,  # Batch size.
           'lr': 0.001,  # Learning rate.
           #'optimizer': 'sgd',

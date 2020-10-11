@@ -220,7 +220,7 @@ class SampleGenerator(object):
         interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
                                           list(range(self.config['num_items']))].sort_index())
         popularity_vector = np.sum(interaction_matrix, axis=0)
-        popularity_vector = (popularity_vector / max(popularity_vector)) + 1
+        popularity_vector = (popularity_vector / max(popularity_vector)) ** 0.5
         return popularity_vector
 
     def create_neighborhood(self):

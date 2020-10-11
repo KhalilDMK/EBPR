@@ -22,23 +22,20 @@ class Engine(object):
         if self.config['model'] == 'BPR':
             loss = - (pos_prediction - neg_prediction).sigmoid().log().sum()
         elif self.config['model'] == 'UBPR':
-            loss = - ((pos_prediction - neg_prediction).sigmoid().log() * (1 / popularity_vector[pos_items]) * (
-                        1 - 1 / popularity_vector[neg_items])).sum()
+            loss = - ((pos_prediction - neg_prediction).sigmoid().log() / popularity_vector[pos_items]).sum()
         elif self.config['model'] == 'EBPR':
             loss = - ((pos_prediction - neg_prediction).sigmoid().log() * explainability_matrix[users, pos_items] * (
                         1 - explainability_matrix[users, neg_items])).sum()
         elif self.config['model'] == 'pUEBPR':
-            loss = - ((pos_prediction - neg_prediction).sigmoid().log() * (1 / popularity_vector[pos_items]) * (
-                        1 - 1 / popularity_vector[neg_items]) * explainability_matrix[users, pos_items] * (
-                                  1 - explainability_matrix[users, neg_items])).sum()
+            loss = - ((pos_prediction - neg_prediction).sigmoid().log() / popularity_vector[pos_items] *
+                      explainability_matrix[users, pos_items] * (1 - explainability_matrix[users, neg_items])).sum()
         elif self.config['model'] == 'UEBPR':
-            loss = - ((pos_prediction - neg_prediction).sigmoid().log() * (1 / popularity_vector[pos_items]) * (
-                        1 - 1 / popularity_vector[neg_items]) * explainability_matrix[users, pos_items] /
-                      popularity_vector[neighborhood[pos_items].flatten()].view(len(pos_items),
-                                                                                self.config['neighborhood']).mean(1) * (
-                                  1 - explainability_matrix[users, neg_items] / popularity_vector[
-                              neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).mean(
-                              1))).sum()
+            loss = - ((pos_prediction - neg_prediction).sigmoid().log() / popularity_vector[pos_items] *
+                      explainability_matrix[users, pos_items] / popularity_vector[
+                          neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).mean(
+                        1) * (1 - explainability_matrix[users, neg_items] / popularity_vector[
+                        neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).mean(
+                        1))).sum()
         if self.config['l2_regularization'] > 0:
             l2_reg = 0
             for param in self.model.parameters():
@@ -130,7 +127,7 @@ class Engine(object):
         if epoch_id == num_epoch - 1:
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
             model_dir = self.config['model_dir_explicit'].format(alias, best_performance[4], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3])
-            save_checkpoint(best_model, model_dir)
+            #save_checkpoint(best_model, model_dir)
         return best_model, best_performance
 
     def save_implicit(self, epoch_id, ndcg, hr, mep, wmep, num_epoch, best_model, best_performance):
@@ -145,7 +142,7 @@ class Engine(object):
         if epoch_id == num_epoch - 1:
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
             model_dir = self.config['model_dir_implicit'].format(alias, best_performance[4], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3])
-            save_checkpoint(best_model, model_dir)
+            #save_checkpoint(best_model, model_dir)
         return best_model, best_performance
 
     def load_model(self, test_model_path):
