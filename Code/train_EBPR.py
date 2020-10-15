@@ -2,7 +2,8 @@ from Code.EBPR_model import BPREngine
 from Code.data import SampleGenerator, read_data
 
 # Read dataset
-dataset_name = 'lastfm-2k'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Movielens 1M dataset. 'lastfm-2k' for the Last.FM 2K dataset.
+dataset_name = 'yahoo-r3'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Movielens 1M dataset. 'lastfm-2k' for the
+# Last.FM 2K dataset. 'yahoo-r3' for the Yahoo! R3 dataset.
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
