@@ -2,11 +2,11 @@ from Code.EBPR_model import BPREngine
 from Code.data import SampleGenerator, read_data
 
 # Read dataset
-dataset_name = 'ml-100k'  # For Movielens 100K. Also try 'ml-1m' for the Movielens 1M dataset
+dataset_name = 'lastfm-2k'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Movielens 1M dataset. 'lastfm-2k' for the Last.FM 2K dataset.
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
-config = {'model': 'pUEBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
+config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
           'dataset': dataset_name,
           'num_epoch': 50,  # Number of training epochs.
           'batch_size': 500,  # Batch size.

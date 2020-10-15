@@ -16,13 +16,23 @@ def read_data(dataset_name):
     dataset = pd.DataFrame()
     if dataset_name == 'ml-100k':
         # Load Movielens 100K Data
-        ml1m_dir = '../Data/ml-100k/u.data'
-        dataset = pd.read_csv(ml1m_dir, sep='\t', header=None, names=['uid', 'mid', 'rating', 'timestamp'],
+        data_dir = '../Data/ml-100k/u.data'
+        dataset = pd.read_csv(data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating', 'timestamp'],
                                   engine='python')
     elif dataset_name == 'ml-1m':
         # Load Movielens 1M Data
-        ml1m_dir = '../Data/ml-1m/ratings.dat'
-        dataset = pd.read_csv(ml1m_dir, sep='::', header=None, names=['uid', 'mid', 'rating', 'timestamp'],  engine='python')
+        data_dir = '../Data/ml-1m/ratings.dat'
+        dataset = pd.read_csv(data_dir, sep='::', header=None, names=['uid', 'mid', 'rating', 'timestamp'],  engine='python')
+
+    elif dataset_name == 'lastfm-2k':
+        # Load Last.FM 2K Data
+        data_dir = '../Data/lastfm-2k/user_artists.dat'
+        dataset = pd.read_csv(data_dir, sep='\t', header=0, names=['uid', 'mid', 'rating'],  engine='python')
+        dataset['timestamp'] = [1 for i in range(len(dataset))]
+        # Filtering users with more than 10 interactions
+        user_count = dataset[['uid', 'mid']].groupby('uid').count()['mid'].rename('count').reset_index()
+        dataset = dataset.merge(user_count, how='left', on='uid')
+        dataset = dataset.loc[dataset['count'] >= 10][['uid', 'mid', 'rating', 'timestamp']]
 
     # Reindex data
     user_id = dataset[['uid']].drop_duplicates().reindex()
