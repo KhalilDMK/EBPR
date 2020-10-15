@@ -34,6 +34,12 @@ def read_data(dataset_name):
         dataset = dataset.merge(user_count, how='left', on='uid')
         dataset = dataset.loc[dataset['count'] >= 10][['uid', 'mid', 'rating', 'timestamp']]
 
+    elif dataset_name == 'yahoo-r3':
+        # Load Yahoo! R3 Data
+        data_dir = '../Data/yahoo-r3/ydata-ymusic-rating-study-v1_0-train.txt'
+        dataset = pd.read_csv(data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating'],  engine='python')
+        dataset['timestamp'] = [1 for i in range(len(dataset))]
+
     # Reindex data
     user_id = dataset[['uid']].drop_duplicates().reindex()
     user_id['userId'] = np.arange(len(user_id))

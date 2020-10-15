@@ -5,12 +5,13 @@ from Code.EBPR_model import BPREngine
 from Code.data import SampleGenerator, read_data
 
 # Read dataset
-dataset_name = 'lastfm-2k'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Movielens 1M dataset. 'lastfm-2k' for the Last.FM 2K dataset.
+dataset_name = 'yahoo-r3'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Movielens 1M dataset. 'lastfm-2k' for the
+# Last.FM 2K dataset. 'yahoo-r3' for the Yahoo! R3 dataset.
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
 
-model_name = 'UEBPR'  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
+model_name = 'BPR'  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
 loo_eval = True  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
 latent_factors = [5, 10, 20, 50, 100]
 batch_sizes = [50, 100, 500]
