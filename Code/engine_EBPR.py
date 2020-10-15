@@ -32,9 +32,9 @@ class Engine(object):
         elif self.config['model'] == 'UEBPR':
             loss = - ((pos_prediction - neg_prediction).sigmoid().log() / popularity_vector[pos_items] *
                       explainability_matrix[users, pos_items] / popularity_vector[
-                          neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).mean(
+                          neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).sum(
                         1) * (1 - explainability_matrix[users, neg_items] / popularity_vector[
-                        neighborhood[neg_items].flatten()].view(len(neg_items), self.config['neighborhood']).mean(
+                        neighborhood[neg_items].flatten()].view(len(neg_items), self.config['neighborhood']).sum(
                         1))).sum()
         if self.config['l2_regularization'] > 0:
             l2_reg = 0
