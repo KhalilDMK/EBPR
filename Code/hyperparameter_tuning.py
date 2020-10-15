@@ -10,7 +10,7 @@ dataset = read_data(dataset_name)
 
 # Define hyperparameters
 
-model_name = 'BPR'  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
+model_name = 'UEBPR'  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
 loo_eval = True  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
 latent_factors = [5, 10, 20, 50, 100]
 batch_sizes = [50, 100, 500]
@@ -18,7 +18,7 @@ l2_regularizations = [0, 0.00001, 0.001]
 neighborhood_sizes = [5, 10, 15, 20, 25, 50]
 num_reps = 5  # Number of replicates per hyperparameter configuration.
 num_epochs = 100  # Number of epochs.
-num_configurations = 20  # Number of random hyperparameter configurations.
+num_configurations = 15  # Number of random hyperparameter configurations.
 
 hyper_tun_configurations = random.sample(set(itertools.product(latent_factors, batch_sizes, l2_regularizations, neighborhood_sizes)), num_configurations)
 

@@ -34,7 +34,7 @@ class Engine(object):
                       explainability_matrix[users, pos_items] / popularity_vector[
                           neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).mean(
                         1) * (1 - explainability_matrix[users, neg_items] / popularity_vector[
-                        neighborhood[pos_items].flatten()].view(len(pos_items), self.config['neighborhood']).mean(
+                        neighborhood[neg_items].flatten()].view(len(neg_items), self.config['neighborhood']).mean(
                         1))).sum()
         if self.config['l2_regularization'] > 0:
             l2_reg = 0
