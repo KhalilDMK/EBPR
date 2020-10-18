@@ -21,3 +21,7 @@ We provide code ready to run on the:
 * Yahoo! R3 dataset.
 
 Note that you need to add the Yahoo! R3 dataset in a folder "Data/yahoo-r3" to be able to use it.
+
+## References
+[1] Rendle, Steffen, et al. "BPR: Bayesian personalized ranking from implicit feedback." arXiv preprint arXiv:1205.2618 (2012).
+[2] Saito, Yuta. "Unbiased Pairwise Learning from Implicit Feedback." NeurIPS 2019 Workshop on Causal Machine Learning. 2019.
