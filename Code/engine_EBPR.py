@@ -127,7 +127,7 @@ class Engine(object):
         if epoch_id == num_epoch - 1:
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
             model_dir = self.config['model_dir_explicit'].format(alias, best_performance[4], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3])
-            #save_checkpoint(best_model, model_dir)
+            save_checkpoint(best_model, model_dir)
         return best_model, best_performance
 
     def save_implicit(self, epoch_id, ndcg, hr, mep, wmep, num_epoch, best_model, best_performance):
@@ -142,7 +142,7 @@ class Engine(object):
         if epoch_id == num_epoch - 1:
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
             model_dir = self.config['model_dir_implicit'].format(alias, best_performance[4], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3])
-            #save_checkpoint(best_model, model_dir)
+            save_checkpoint(best_model, model_dir)
         return best_model, best_performance
 
     def load_model(self, test_model_path):
