@@ -1,5 +1,5 @@
 # EBPR
-Pytorch implementation of the paper "Investigating Explainability and Exposure Bias in Pairwise Ranking from Implicit Feedback".
+Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from Implicit Feedback".
 
 This is an anonymous copy of the private Github repository for The Web Conference submission.
 
