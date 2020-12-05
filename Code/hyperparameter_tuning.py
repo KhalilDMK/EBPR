@@ -11,7 +11,7 @@ dataset = read_data(dataset_name)
 
 # Define hyperparameters
 
-model_name = 'UEBPR'  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
+model_name = 'EBPR'  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
 loo_eval = True  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
 latent_factors = [5, 10, 20, 50, 100]
 batch_sizes = [50, 100, 500]
@@ -86,7 +86,7 @@ for hyper_tun_configuration in hyper_tun_configurations:
             train_loader = sample_generator.train_data_loader(config['batch_size'])
             engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
             if config['loo_eval']:
-                hr, ndcg, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
+                ndcg, hr, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
                 print('-' * 80)
                 best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, config['num_epoch'], best_model, best_performance)
             else:

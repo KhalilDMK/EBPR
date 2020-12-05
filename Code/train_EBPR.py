@@ -9,8 +9,8 @@ dataset = read_data(dataset_name)
 # Define hyperparameters
 config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
           'dataset': dataset_name,
-          'num_epoch': 50,  # Number of training epochs.
-          'batch_size': 500,  # Batch size.
+          'num_epoch': 5,  # Number of training epochs.
+          'batch_size': 100,  # Batch size.
           'lr': 0.001,  # Learning rate.
           #'optimizer': 'sgd',
           #'sgd_momentum': 0.9,
@@ -21,9 +21,9 @@ config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', '
           'num_users': len(dataset['userId'].unique()),
           'num_items': len(dataset['itemId'].unique()),
           'test_rate': 0.2,  # Test rate for random train/test split. Used when 'loo_eval' is set to False.
-          'num_latent': 10,  # Number of latent factors.
+          'num_latent': 100,  # Number of latent factors.
           'weight_decay': 0,
-          'l2_regularization': 0,
+          'l2_regularization': 0.001,
           'use_cuda': True,
           'device_id': 0,
           'top_k': 10,  # k in MAP@k, HR@k and NDCG@k.
@@ -58,7 +58,7 @@ for epoch in range(config['num_epoch']):
     train_loader = sample_generator.train_data_loader(config['batch_size'])
     engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
     if config['loo_eval']:
-        hr, ndcg, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
+        ndcg, hr, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
         print('-' * 80)
         best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, config['num_epoch'], best_model, best_performance)
     else:
