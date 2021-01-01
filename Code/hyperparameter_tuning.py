@@ -16,9 +16,10 @@ loo_eval = True  # True: LOO evaluation with HR@k and NDCG@k. False: Random trai
 latent_factors = [5, 10, 20, 50, 100]
 batch_sizes = [50, 100, 500]
 l2_regularizations = [0, 0.00001, 0.001]
-neighborhood_sizes = [5, 10, 15, 20, 25, 50]
-num_reps = 2  # Number of replicates per hyperparameter configuration.
-num_epochs = 100  # Number of epochs.
+#neighborhood_sizes = [5, 10, 15, 20, 25, 50]
+neighborhood_sizes = [20]
+num_reps = 1  # Number of replicates per hyperparameter configuration.
+num_epochs = 50  # Number of epochs.
 num_configurations = 7  # Number of random hyperparameter configurations.
 
 hyper_tun_configurations = random.sample(set(itertools.product(latent_factors, batch_sizes, l2_regularizations, neighborhood_sizes)), num_configurations)
@@ -26,9 +27,9 @@ hyper_tun_configurations = random.sample(set(itertools.product(latent_factors, b
 # Define results dataframe
 
 if loo_eval:
-    results = pd.DataFrame(columns=['latent', 'batch_size', 'l2_reg', 'neighborhood', 'rep', 'ndcg', 'hr', 'mep', 'wmep'])
+    results = pd.DataFrame(columns=['latent', 'batch_size', 'l2_reg', 'neighborhood', 'rep', 'ndcg', 'hr', 'mep', 'wmep', 'avg_pop', 'efd', 'avg_pair_sim'])
 else:
-    results = pd.DataFrame(columns=['latent', 'batch_size', 'l2_reg', 'neighborhood', 'rep', 'ndcg', 'map', 'mep', 'wmep'])
+    results = pd.DataFrame(columns=['latent', 'batch_size', 'l2_reg', 'neighborhood', 'rep', 'ndcg', 'map', 'mep', 'wmep', 'avg_pop', 'efd', 'avg_pair_sim'])
 
 # Hyperparameter tuning experiments
 
@@ -58,8 +59,8 @@ for hyper_tun_configuration in hyper_tun_configurations:
                   'loo_eval': loo_eval,
                   # evaluation with MAP@k and NDCG@k.
                   'neighborhood': hyper_tun_configuration[3],
-                  'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model',
-                  'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model'}
+                  'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}_Avg_Pop@{}_{:.4f}_EFD@{}_{:.4f}_Avg_Pair_Sim@{}_{:.4f}.model',
+                  'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}_Avg_Pop@{}_{:.4f}_EFD@{}_{:.4f}_Avg_Pair_Sim@{}_{:.4f}.model'}
 
         # DataLoader
         sample_generator = SampleGenerator(dataset, config)
@@ -72,13 +73,13 @@ for hyper_tun_configuration in hyper_tun_configurations:
         popularity_vector = sample_generator.create_popularity_vector()
 
         #Create item neighborhood
-        neighborhood = sample_generator.create_neighborhood()
+        neighborhood, item_similarity_matrix = sample_generator.create_neighborhood()
 
         # Specify the exact model
         engine = BPREngine(config)
 
         # Initialize list of optimal results
-        best_performance = [0] * 5
+        best_performance = [0] * 8
 
         best_model = ''
         for epoch in range(config['num_epoch']):
@@ -86,26 +87,26 @@ for hyper_tun_configuration in hyper_tun_configurations:
             train_loader = sample_generator.train_data_loader(config['batch_size'])
             engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
             if config['loo_eval']:
-                ndcg, hr, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
+                ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id=epoch)
                 print('-' * 80)
-                best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, config['num_epoch'], best_model, best_performance)
+                best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
             else:
-                map, ndcg, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
+                map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id=epoch)
                 print('-' * 80)
-                best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, config['num_epoch'], best_model, best_performance)
+                best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
 
         # Save results to dataframe
         if config['loo_eval']:
             results = results.append(
                 {'latent': config['num_latent'], 'batch_size': config['batch_size'], 'l2_reg': config['l2_regularization'],
                  'neighborhood': config['neighborhood'], 'rep': rep, 'ndcg': best_performance[0],
-                 'hr': best_performance[1], 'mep': best_performance[2], 'wmep': best_performance[3]},
+                 'hr': best_performance[1], 'mep': best_performance[2], 'wmep': best_performance[3], 'avg_pop': best_performance[4], 'efd': best_performance[5], 'avg_pair_sim': best_performance[6]},
                 ignore_index=True)
         else:
             results = results.append(
                 {'latent': config['num_latent'], 'batch_size': config['batch_size'], 'l2_reg': config['l2_regularization'],
                  'neighborhood': config['neighborhood'], 'rep': rep, 'ndcg': best_performance[1],
-                 'map': best_performance[0], 'mep': best_performance[2], 'wmep': best_performance[3]},
+                 'map': best_performance[0], 'mep': best_performance[2], 'wmep': best_performance[3], 'avg_pop': best_performance[4], 'efd': best_performance[5], 'avg_pair_sim': best_performance[6]},
                 ignore_index=True)
 
 # Save dataframe
