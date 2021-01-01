@@ -29,6 +29,10 @@ def read_data(dataset_name):
         data_dir = '../Data/lastfm-2k/user_artists.dat'
         dataset = pd.read_csv(data_dir, sep='\t', header=0, names=['uid', 'mid', 'rating'],  engine='python')
         dataset['timestamp'] = [1 for i in range(len(dataset))]
+        # Filtering items with more than 10 interactions (Uncomment to study the effect of data sparsity)
+        #item_count = dataset[['uid', 'mid']].groupby('mid').count()['uid'].rename('count').reset_index()
+        #dataset = dataset.merge(item_count, how='left', on='mid')
+        #dataset = dataset.loc[dataset['count'] >= 10][['uid', 'mid', 'rating', 'timestamp']]
         # Filtering users with more than 10 interactions
         user_count = dataset[['uid', 'mid']].groupby('uid').count()['mid'].rename('count').reset_index()
         dataset = dataset.merge(user_count, how='left', on='uid')
@@ -272,4 +276,4 @@ class SampleGenerator(object):
         np.fill_diagonal(item_similarity_matrix, 0)
         neighborhood = np.array([np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:]
                         for row in item_similarity_matrix])
-        return neighborhood
+        return neighborhood, item_similarity_matrix

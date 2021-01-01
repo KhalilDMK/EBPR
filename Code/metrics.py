@@ -2,6 +2,7 @@ import math
 import pandas as pd
 from ml_metrics import mapk
 import numpy as np
+from itertools import combinations
 
 
 class MetronAtK(object):
@@ -117,3 +118,33 @@ class MetronAtK(object):
         full['exp_and_rec'] = ((full['exp_score'] > theta) & (full['rank'] <= top_k)) * 1 * (full['exp_score'])
         full['topN'] = (full['rank'] <= top_k) * 1
         return np.mean(full.groupby('user')['exp_and_rec'].sum() / full.groupby('user')['topN'].sum())
+
+    def avg_popularity(self, popularity_vector):
+        """Average popularity of top_k recommended items"""
+        full, top_k = self._subjects, self._top_k
+        if self.loo_eval == True:
+            recommended_items = list(full.loc[full['rank'] <= top_k]['item'])
+        else:
+            recommended_items = list(full.loc[full['rank'] <= top_k]['test_item'])
+        return np.mean([popularity_vector[i] for i in recommended_items])
+
+    def efd(self, popularity_vector):
+        """Expected Free Discovery (EFD) in top_k recommended items"""
+        full, top_k = self._subjects, self._top_k
+        if self.loo_eval == True:
+            recommended_items = list(full.loc[full['rank'] <= top_k]['item'])
+        else:
+            recommended_items = list(full.loc[full['rank'] <= top_k]['test_item'])
+        return np.mean([- np.log2(popularity_vector[i]) for i in recommended_items])
+
+    def avg_pairwise_similarity(self, item_similarity_matrix):
+        """Average Pairwise Similarity of top_k recommended items"""
+        full, top_k = self._subjects, self._top_k
+        full = full.loc[full['rank'] <= top_k]
+        users = list(dict.fromkeys(list(full['user'])))
+        if self.loo_eval == True:
+            rec_items_for_users = [list(full.loc[full['user'] == u]['item']) for u in users]
+        else:
+            rec_items_for_users = [list(full.loc[full['user'] == u]['test_item']) for u in users]
+        item_combinations = [set(combinations(rec_items_for_user, 2)) for rec_items_for_user in rec_items_for_users]
+        return np.mean([np.mean([item_similarity_matrix[i, j] for (i, j) in item_combinations[k]]) for k in range(len(item_combinations))])

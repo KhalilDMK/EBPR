@@ -9,8 +9,8 @@ dataset = read_data(dataset_name)
 # Define hyperparameters
 config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
           'dataset': dataset_name,
-          'num_epoch': 5,  # Number of training epochs.
-          'batch_size': 100,  # Batch size.
+          'num_epoch': 50,  # Number of training epochs.
+          'batch_size': 50,  # Batch size.
           'lr': 0.001,  # Learning rate.
           #'optimizer': 'sgd',
           #'sgd_momentum': 0.9,
@@ -21,17 +21,17 @@ config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', '
           'num_users': len(dataset['userId'].unique()),
           'num_items': len(dataset['itemId'].unique()),
           'test_rate': 0.2,  # Test rate for random train/test split. Used when 'loo_eval' is set to False.
-          'num_latent': 100,  # Number of latent factors.
+          'num_latent': 50,  # Number of latent factors.
           'weight_decay': 0,
-          'l2_regularization': 0.001,
+          'l2_regularization': 0.00001,
           'use_cuda': True,
           'device_id': 0,
           'top_k': 10,  # k in MAP@k, HR@k and NDCG@k.
           'loo_eval': True,  # True: LOO evaluation with HR@k and NDCG@k. False: Random train/test split
           # evaluation with MAP@k and NDCG@k.
-          'neighborhood': 10,  # Neighborhood size for explainability.
-          'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model',
-          'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}.model'}
+          'neighborhood': 20,  # Neighborhood size for explainability.
+          'model_dir_explicit':'../Output/checkpoints/{}_Epoch{}_MAP@{}_{:.4f}_NDCG@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}_Avg_Pop@{}_{:.4f}_EFD@{}_{:.4f}_Avg_Pair_Sim@{}_{:.4f}.model',
+          'model_dir_implicit':'../Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}_Avg_Pop@{}_{:.4f}_EFD@{}_{:.4f}_Avg_Pair_Sim@{}_{:.4f}.model'}
 
 # DataLoader
 sample_generator = SampleGenerator(dataset, config)
@@ -44,13 +44,13 @@ explainability_matrix = sample_generator.create_explainability_matrix()
 popularity_vector = sample_generator.create_popularity_vector()
 
 #Create item neighborhood
-neighborhood = sample_generator.create_neighborhood()
+neighborhood, item_similarity_matrix = sample_generator.create_neighborhood()
 
 # Specify the exact model
 engine = BPREngine(config)
 
 # Initialize list of optimal results
-best_performance = [0] * 5
+best_performance = [0] * 8
 
 best_model = ''
 for epoch in range(config['num_epoch']):
@@ -58,10 +58,10 @@ for epoch in range(config['num_epoch']):
     train_loader = sample_generator.train_data_loader(config['batch_size'])
     engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
     if config['loo_eval']:
-        ndcg, hr, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
+        ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id=epoch)
         print('-' * 80)
-        best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, config['num_epoch'], best_model, best_performance)
+        best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
     else:
-        map, ndcg, mep, wmep = engine.evaluate(evaluation_data, explainability_matrix, epoch_id=epoch)
+        map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id=epoch)
         print('-' * 80)
-        best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, config['num_epoch'], best_model, best_performance)
+        best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)

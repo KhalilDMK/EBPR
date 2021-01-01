@@ -62,7 +62,7 @@ class Engine(object):
             loss = self.train_single_batch_EBPR(user, pos_item, neg_item, rating, explainability_matrix, popularity_vector, neighborhood)
             total_loss += loss
 
-    def evaluate(self, evaluate_data, explainability_matrix, epoch_id):
+    def evaluate(self, evaluate_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
         if self.config['loo_eval']:
             test_users_eval, test_items_eval, test_scores_eval, negative_users_eval, negative_items_eval, negative_scores_eval = [], [], [], [], [], []
@@ -93,10 +93,10 @@ class Engine(object):
                         negative_scores_eval += negative_scores.cpu().data.view(-1).tolist()
                 self._metron.subjects = [test_users_eval, test_items_eval, test_scores_eval, negative_users_eval,
                                          negative_items_eval, negative_scores_eval]
-                hr, ndcg, mep, wmep = self._metron.cal_hit_ratio_loo(), self._metron.cal_ndcg_loo(), self._metron.cal_mep(explainability_matrix, theta=0), self._metron.cal_weighted_mep(explainability_matrix, theta=0)
-                print('Evaluating Epoch {}: NDCG@{} = {:.4f}, HR@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}'.format(epoch_id, self.config['top_k'],
-                                                                                     ndcg, self.config['top_k'], hr, self.config['top_k'], mep, self.config['top_k'], wmep))
-                return ndcg, hr, mep, wmep
+                hr, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = self._metron.cal_hit_ratio_loo(), self._metron.cal_ndcg_loo(), self._metron.cal_mep(explainability_matrix, theta=0), self._metron.cal_weighted_mep(explainability_matrix, theta=0), self._metron.avg_popularity(popularity_vector), self._metron.efd(popularity_vector), self._metron.avg_pairwise_similarity(item_similarity_matrix)
+                print('Evaluating Epoch {}: NDCG@{} = {:.4f}, HR@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}, Avg_Pop@{} = {:.4f}, EFD@{} = {:.4f}, Avg_Pair_Sim@{} = {:.4f}'.format(epoch_id, self.config['top_k'],
+                                                                                     ndcg, self.config['top_k'], hr, self.config['top_k'], mep, self.config['top_k'], wmep, self.config['top_k'], avg_pop, self.config['top_k'], efd, self.config['top_k'], avg_pair_sim))
+                return ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim
             else:
                 for batch_id, batch in enumerate(evaluate_data):
                     test_users, test_items, test_output = batch[0], batch[1], batch[2]
@@ -111,37 +111,43 @@ class Engine(object):
                         test_scores_eval += test_scores.cpu().data.view(-1).tolist()
                         test_output_eval += test_output.cpu().data.view(-1).tolist()
             self._metron.subjects = [test_users_eval, test_items_eval, test_output_eval, test_scores_eval]
-            map, ndcg, mep, wmep = self._metron.cal_map_at_k(), self._metron.cal_ndcg(), self._metron.cal_mep(explainability_matrix, theta=0), self._metron.cal_weighted_mep(explainability_matrix, theta=0)
-            print('Evaluating Epoch {}: MAP@{} = {:.4f}, NDCG@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}'.format(epoch_id, self.config['top_k'], map, self.config['top_k'], ndcg, self.config['top_k'], mep, self.config['top_k'], wmep))
-            return map, ndcg, mep, wmep
+            map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = self._metron.cal_map_at_k(), self._metron.cal_ndcg(), self._metron.cal_mep(explainability_matrix, theta=0), self._metron.cal_weighted_mep(explainability_matrix, theta=0), self._metron.avg_popularity(popularity_vector), self._metron.efd(popularity_vector), self._metron.avg_pairwise_similarity(item_similarity_matrix)
+            print('Evaluating Epoch {}: MAP@{} = {:.4f}, NDCG@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}, Avg_Pop@{} = {:.4f}, EFD@{} = {:.4f}, Avg_Pair_Sim@{} = {:.4f}'.format(epoch_id, self.config['top_k'], map, self.config['top_k'], ndcg, self.config['top_k'], mep, self.config['top_k'], wmep, self.config['top_k'], avg_pop, self.config['top_k'], efd, self.config['top_k'], avg_pair_sim))
+            return map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim
 
-    def save_explicit(self, epoch_id, map, ndcg, mep, wmep, num_epoch, best_model, best_performance):
+    def save_explicit(self, epoch_id, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, num_epoch, best_model, best_performance):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
         if ndcg > best_performance[1]:
             best_performance[0] = map
             best_performance[1] = ndcg
             best_performance[2] = mep
             best_performance[3] = wmep
-            best_performance[4] = epoch_id
+            best_performance[4] = avg_pop
+            best_performance[5] = efd
+            best_performance[6] = avg_pair_sim
+            best_performance[7] = epoch_id
             best_model = self.model
         if epoch_id == num_epoch - 1:
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
-            model_dir = self.config['model_dir_explicit'].format(alias, best_performance[4], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3])
+            model_dir = self.config['model_dir_explicit'].format(alias, best_performance[7], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3], self.config['top_k'], best_performance[4], self.config['top_k'], best_performance[5], self.config['top_k'], best_performance[6])
             save_checkpoint(best_model, model_dir)
         return best_model, best_performance
 
-    def save_implicit(self, epoch_id, ndcg, hr, mep, wmep, num_epoch, best_model, best_performance):
+    def save_implicit(self, epoch_id, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, num_epoch, best_model, best_performance):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
         if ndcg > best_performance[0]:
             best_performance[0] = ndcg
             best_performance[1] = hr
             best_performance[2] = mep
             best_performance[3] = wmep
-            best_performance[4] = epoch_id
+            best_performance[4] = avg_pop
+            best_performance[5] = efd
+            best_performance[6] = avg_pair_sim
+            best_performance[7] = epoch_id
             best_model = self.model
         if epoch_id == num_epoch - 1:
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
-            model_dir = self.config['model_dir_implicit'].format(alias, best_performance[4], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3])
+            model_dir = self.config['model_dir_implicit'].format(alias, best_performance[7], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3], self.config['top_k'], best_performance[4], self.config['top_k'], best_performance[5], self.config['top_k'], best_performance[6])
             save_checkpoint(best_model, model_dir)
         return best_model, best_performance
 
