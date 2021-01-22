@@ -133,10 +133,10 @@ class SampleGenerator(object):
         # create negative item samples
         self.negatives = self._sample_negative(ratings)
         if self.config['loo_eval']:
-            self.train_ratings, self.test_ratings = self._split_loo(self.preprocess_ratings)
+            self.train_ratings, self.val_ratings, self.test_ratings = self._split_loo(self.preprocess_ratings)
         else:
             self.test_rate = self.config['test_rate']
-            self.train_ratings, self.test_ratings = self.train_test_split_random(self.preprocess_ratings)  # also try train_test_split_latest
+            self.train_ratings, self.val_ratings, self.test_ratings = self.train_test_split_random(self.preprocess_ratings)
 
     def _binarize(self, ratings):
         """binarize into 0 or 1 for imlicit feedback"""
@@ -144,39 +144,32 @@ class SampleGenerator(object):
         ratings['rating'] = 1.0
         return ratings
 
-    def train_test_split_latest(self, ratings):
-        """First (100 *  (1 - test_rate))%/Last (test_rate * 100)% (for every user) Train/test split"""
-        ratings['rank'] = ratings.groupby(['userId'])['timestamp'].rank(method='first', ascending=False)
-        rating_count = ratings.groupby(['userId'])['timestamp'].count()
-        ratings['num_ratings'] = [rating_count[user] for user in ratings['userId']]
-        ratings['rank/num_ratings'] = ratings['rank'] / ratings['num_ratings']
-        train = ratings[ratings['rank/num_ratings'] <= (1 - self.test_rate)]
-        print('Train size: ' + str(len(train)))
-        test = ratings[ratings['rank/num_ratings'] > (1 - self.test_rate)]
-        print('Test size: ' + str(len(test)))
-        return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
-
     def train_test_split_random(self, ratings):
         """Random train/test split"""
         train, test = train_test_split(ratings, test_size=self.test_rate)
-        return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
+        test, val = train_test_split(test, test_size=0.5)
+        return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
 
     def _split_loo(self, ratings):
         """leave-one-out train/test split"""
         ratings['rank_latest'] = ratings.groupby(['userId'])['timestamp'].rank(method='first', ascending=False)
         test = ratings[ratings['rank_latest'] == 1]
-        train = ratings[ratings['rank_latest'] > 1]
-        assert train['userId'].nunique() == test['userId'].nunique()
-        return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
+        val = ratings[ratings['rank_latest'] == 2]
+        train = ratings[ratings['rank_latest'] > 2]
+        assert train['userId'].nunique() == test['userId'].nunique() == val['userId'].nunique()
+        return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
 
     def _sample_negative(self, ratings):
-        """return all negative items & 100 sampled negative items"""
+        """return all negative items & 100 sampled negative test items & 100 sampled negative val items"""
         interact_status = ratings.groupby('userId')['itemId'].apply(set).reset_index().rename(
             columns={'itemId': 'interacted_items'})
         interact_status['negative_items'] = interact_status['interacted_items'].apply(lambda x: self.item_pool - x)
-        interact_status['negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 100))
-        interact_status['negative_items'] = interact_status.apply(lambda x: (x.negative_items - set(x.negative_samples)), axis=1)
-        return interact_status[['userId', 'negative_items', 'negative_samples']]
+        interact_status['test_negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 100))
+        interact_status['negative_items'] = interact_status.apply(lambda x: (x.negative_items - set(x.test_negative_samples)), axis=1)
+        interact_status['val_negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 100))
+        interact_status['negative_items'] = interact_status.apply(
+            lambda x: (x.negative_items - set(x.val_negative_samples)), axis=1)
+        return interact_status[['userId', 'negative_items', 'test_negative_samples', 'val_negative_samples']]
 
     def train_data_loader(self, batch_size):
         """instance train loader for one training epoch"""
@@ -194,19 +187,19 @@ class SampleGenerator(object):
     def test_data_loader(self, batch_size):
         """create evaluation data"""
         if self.config['loo_eval']:
-            test_ratings = pd.merge(self.test_ratings, self.negatives[['userId', 'negative_samples']], on='userId')
+            test_ratings = pd.merge(self.test_ratings, self.negatives[['userId', 'test_negative_samples']], on='userId')
             test_users, test_items, negative_users, negative_items = [], [], [], []
             for row in test_ratings.itertuples():
                 test_users.append(int(row.userId))
                 test_items.append(int(row.itemId))
-                for i in range(len(row.negative_samples)):
+                for i in range(len(row.test_negative_samples)):
                     negative_users.append(int(row.userId))
-                    negative_items.append(int(row.negative_samples[i]))
+                    negative_items.append(int(row.test_negative_samples[i]))
             dataset = data_loader_implicit(user_tensor=torch.LongTensor(test_users),
                                            item_tensor=torch.LongTensor(test_items))
             dataset_negatives = data_loader_negatives(user_neg_tensor=torch.LongTensor(negative_users),
                                                       item_neg_tensor=torch.LongTensor(negative_items))
-            return [DataLoader(dataset, batch_size=batch_size, shuffle=False), DataLoader(dataset_negatives, batch_size=50, shuffle=False)]
+            return [DataLoader(dataset, batch_size=batch_size, shuffle=False), DataLoader(dataset_negatives, batch_size=batch_size, shuffle=False)]
         else:
             test_ratings = self.test_ratings
             test_users = [int(x) for x in test_ratings['userId']]
@@ -215,6 +208,32 @@ class SampleGenerator(object):
             dataset = data_loader_test_explicit(user_tensor=torch.LongTensor(test_users),
                                                 item_tensor=torch.LongTensor(test_items),
                                                 target_tensor=torch.FloatTensor(test_ratings))
+            return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
+    def val_data_loader(self, batch_size):
+        """create validation data"""
+        if self.config['loo_eval']:
+            val_ratings = pd.merge(self.val_ratings, self.negatives[['userId', 'val_negative_samples']], on='userId')
+            val_users, val_items, negative_users, negative_items = [], [], [], []
+            for row in val_ratings.itertuples():
+                val_users.append(int(row.userId))
+                val_items.append(int(row.itemId))
+                for i in range(len(row.val_negative_samples)):
+                    negative_users.append(int(row.userId))
+                    negative_items.append(int(row.val_negative_samples[i]))
+            dataset = data_loader_implicit(user_tensor=torch.LongTensor(val_users),
+                                           item_tensor=torch.LongTensor(val_items))
+            dataset_negatives = data_loader_negatives(user_neg_tensor=torch.LongTensor(negative_users),
+                                                      item_neg_tensor=torch.LongTensor(negative_items))
+            return [DataLoader(dataset, batch_size=batch_size, shuffle=False), DataLoader(dataset_negatives, batch_size=batch_size, shuffle=False)]
+        else:
+            val_ratings = self.test_ratings
+            val_users = [int(x) for x in val_ratings['userId']]
+            val_items = [int(x) for x in val_ratings['itemId']]
+            val_ratings = [float(x) for x in val_ratings['rating']]
+            dataset = data_loader_test_explicit(user_tensor=torch.LongTensor(val_users),
+                                                item_tensor=torch.LongTensor(val_items),
+                                                target_tensor=torch.FloatTensor(val_ratings))
             return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
     def create_explainability_matrix(self, include_test=False):
