@@ -68,12 +68,15 @@ for hyper_tun_configuration in hyper_tun_configurations:
 
         # Create explainability matrix
         explainability_matrix = sample_generator.create_explainability_matrix()
+        test_explainability_matrix = sample_generator.create_explainability_matrix(include_test=True)
 
         # Create popularity vector
         popularity_vector = sample_generator.create_popularity_vector()
+        test_popularity_vector = sample_generator.create_popularity_vector(include_test=True)
 
-        #Create item neighborhood
+        # Create item neighborhood
         neighborhood, item_similarity_matrix = sample_generator.create_neighborhood()
+        _, test_item_similarity_matrix = sample_generator.create_neighborhood(include_test=True)
 
         # Specify the exact model
         engine = BPREngine(config)

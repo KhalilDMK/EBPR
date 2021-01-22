@@ -7,7 +7,7 @@ dataset_name = 'ml-100k'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Moviel
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
-config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
+config = {'model': 'UEBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
           'dataset': dataset_name,
           'num_epoch': 50,  # Number of training epochs.
           'batch_size': 50,  # Batch size.
@@ -23,7 +23,7 @@ config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', '
           'test_rate': 0.2,  # Test rate for random train/test split. Used when 'loo_eval' is set to False.
           'num_latent': 50,  # Number of latent factors.
           'weight_decay': 0,
-          'l2_regularization': 0.00001,
+          'l2_regularization': 0,
           'use_cuda': True,
           'device_id': 0,
           'top_k': 10,  # k in MAP@k, HR@k and NDCG@k.
@@ -39,12 +39,15 @@ evaluation_data = sample_generator.test_data_loader(config['batch_size'])
 
 # Create explainability matrix
 explainability_matrix = sample_generator.create_explainability_matrix()
+test_explainability_matrix = sample_generator.create_explainability_matrix(include_test=True)
 
 # Create popularity vector
 popularity_vector = sample_generator.create_popularity_vector()
+test_popularity_vector = sample_generator.create_popularity_vector(include_test=True)
 
 #Create item neighborhood
 neighborhood, item_similarity_matrix = sample_generator.create_neighborhood()
+_, test_item_similarity_matrix = sample_generator.create_neighborhood(include_test=True)
 
 # Specify the exact model
 engine = BPREngine(config)
@@ -58,10 +61,10 @@ for epoch in range(config['num_epoch']):
     train_loader = sample_generator.train_data_loader(config['batch_size'])
     engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
     if config['loo_eval']:
-        ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id=epoch)
+        ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=epoch)
         print('-' * 80)
         best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
     else:
-        map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, explainability_matrix, popularity_vector, item_similarity_matrix, epoch_id=epoch)
+        map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=epoch)
         print('-' * 80)
         best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
