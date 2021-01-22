@@ -217,19 +217,22 @@ class SampleGenerator(object):
                                                 target_tensor=torch.FloatTensor(test_ratings))
             return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-    def create_explainability_matrix(self):
+    def create_explainability_matrix(self, include_test=False):
         """create explainability matrix"""
-        print('Creating explainability matrix...')
-        interaction_matrix = pd.crosstab(self.train_ratings.userId, self.train_ratings.itemId)
-        missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
-        missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
-        for missing_column in missing_columns:
-            interaction_matrix[missing_column] = [0] * len(interaction_matrix)
-        for missing_row in missing_rows:
-            interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
-        interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
-        #interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
-        #                                  list(range(self.config['num_items']))].sort_index())
+        if not include_test:
+            print('Creating explainability matrix...')
+            interaction_matrix = pd.crosstab(self.train_ratings.userId, self.train_ratings.itemId)
+            missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
+            missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
+            for missing_column in missing_columns:
+                interaction_matrix[missing_column] = [0] * len(interaction_matrix)
+            for missing_row in missing_rows:
+                interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
+            interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
+        else:
+            print('Creating test explainability matrix...')
+            interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
+                                              list(range(self.config['num_items']))].sort_index())
         #item_similarity_matrix = 1 - pairwise_distances(interaction_matrix.T, metric = "hamming")
         item_similarity_matrix = cosine_similarity(interaction_matrix.T)
         np.fill_diagonal(item_similarity_matrix, 0)
@@ -242,36 +245,42 @@ class SampleGenerator(object):
         #explainability_matrix = explainability_matrix + self.config['epsilon']
         return explainability_matrix
 
-    def create_popularity_vector(self):
+    def create_popularity_vector(self, include_test=False):
         """create popularity vector"""
-        print('Creating popularity vector...')
-        interaction_matrix = pd.crosstab(self.train_ratings.userId, self.train_ratings.itemId)
-        missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
-        missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
-        for missing_column in missing_columns:
-            interaction_matrix[missing_column] = [0] * len(interaction_matrix)
-        for missing_row in missing_rows:
-            interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
-        interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
-        #interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
-        #                                  list(range(self.config['num_items']))].sort_index())
+        if not include_test:
+            print('Creating popularity vector...')
+            interaction_matrix = pd.crosstab(self.train_ratings.userId, self.train_ratings.itemId)
+            missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
+            missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
+            for missing_column in missing_columns:
+                interaction_matrix[missing_column] = [0] * len(interaction_matrix)
+            for missing_row in missing_rows:
+                interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
+            interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
+        else:
+            print('Creating test popularity vector...')
+            interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
+                                              list(range(self.config['num_items']))].sort_index())
         popularity_vector = np.sum(interaction_matrix, axis=0)
         popularity_vector = (popularity_vector / max(popularity_vector)) ** 0.5
         return popularity_vector
 
-    def create_neighborhood(self):
+    def create_neighborhood(self, include_test=False):
         """Determine item neighbors"""
-        print('Determining item neighborhoods...')
-        interaction_matrix = pd.crosstab(self.train_ratings.userId, self.train_ratings.itemId)
-        missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
-        missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
-        for missing_column in missing_columns:
-            interaction_matrix[missing_column] = [0] * len(interaction_matrix)
-        for missing_row in missing_rows:
-            interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
-        interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
-        #interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
-        #                                  list(range(self.config['num_items']))].sort_index())
+        if not include_test:
+            print('Determining item neighborhoods...')
+            interaction_matrix = pd.crosstab(self.train_ratings.userId, self.train_ratings.itemId)
+            missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
+            missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
+            for missing_column in missing_columns:
+                interaction_matrix[missing_column] = [0] * len(interaction_matrix)
+            for missing_row in missing_rows:
+                interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
+            interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
+        else:
+            print('Determining test item neighborhoods...')
+            interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
+                                              list(range(self.config['num_items']))].sort_index())
         item_similarity_matrix = cosine_similarity(interaction_matrix.T)
         np.fill_diagonal(item_similarity_matrix, 0)
         neighborhood = np.array([np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:]

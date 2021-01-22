@@ -3,6 +3,7 @@ import pandas as pd
 from ml_metrics import mapk
 import numpy as np
 from itertools import combinations
+import sys
 
 
 class MetronAtK(object):
@@ -135,7 +136,7 @@ class MetronAtK(object):
             recommended_items = list(full.loc[full['rank'] <= top_k]['item'])
         else:
             recommended_items = list(full.loc[full['rank'] <= top_k]['test_item'])
-        return np.mean([- np.log2(popularity_vector[i]) for i in recommended_items])
+        return np.mean([- np.log2(popularity_vector[i] + sys.float_info.epsilon) for i in recommended_items])
 
     def avg_pairwise_similarity(self, item_similarity_matrix):
         """Average Pairwise Similarity of top_k recommended items"""
