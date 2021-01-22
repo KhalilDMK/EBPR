@@ -115,9 +115,15 @@ class Engine(object):
             print('Evaluating Epoch {}: MAP@{} = {:.4f}, NDCG@{} = {:.4f}, MEP@{} = {:.4f}, WMEP@{} = {:.4f}, Avg_Pop@{} = {:.4f}, EFD@{} = {:.4f}, Avg_Pair_Sim@{} = {:.4f}'.format(epoch_id, self.config['top_k'], map, self.config['top_k'], ndcg, self.config['top_k'], mep, self.config['top_k'], wmep, self.config['top_k'], avg_pop, self.config['top_k'], efd, self.config['top_k'], avg_pair_sim))
             return map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim
 
-    def save_explicit(self, epoch_id, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, num_epoch, best_model, best_performance):
+    def save_explicit(self, epoch_id, ndcg, num_epoch, best_model, best_ndcg, best_performance, test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
-        if ndcg > best_performance[1]:
+        if ndcg > best_ndcg:
+            best_ndcg = ndcg
+            map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = self.evaluate(test_data,
+                                                                               test_explainability_matrix,
+                                                                               test_popularity_vector,
+                                                                               test_item_similarity_matrix,
+                                                                               epoch_id=str(epoch_id) + ' on test data')
             best_performance[0] = map
             best_performance[1] = ndcg
             best_performance[2] = mep
@@ -131,11 +137,17 @@ class Engine(object):
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
             model_dir = self.config['model_dir_explicit'].format(alias, best_performance[7], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3], self.config['top_k'], best_performance[4], self.config['top_k'], best_performance[5], self.config['top_k'], best_performance[6])
             save_checkpoint(best_model, model_dir)
-        return best_model, best_performance
+        return best_model, best_performance, best_ndcg
 
-    def save_implicit(self, epoch_id, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, num_epoch, best_model, best_performance):
+    def save_implicit(self, epoch_id, ndcg, num_epoch, best_model, best_ndcg, best_performance, test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
-        if ndcg > best_performance[0]:
+        if ndcg > best_ndcg:
+            best_ndcg = ndcg
+            ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = self.evaluate(test_data,
+                                                                              test_explainability_matrix,
+                                                                              test_popularity_vector,
+                                                                              test_item_similarity_matrix,
+                                                                              epoch_id=str(epoch_id) + ' on test data')
             best_performance[0] = ndcg
             best_performance[1] = hr
             best_performance[2] = mep
@@ -149,7 +161,7 @@ class Engine(object):
             alias = self.config['model'] + '_' + self.config['dataset'] + '_batchsize_' + str(self.config['batch_size']) + '_opt_' + str(self.config['optimizer']) + '_lr_' + str(self.config['lr']) + '_latent_' + str(self.config['num_latent']) + '_l2reg_' + str(self.config['l2_regularization'])
             model_dir = self.config['model_dir_implicit'].format(alias, best_performance[7], self.config['top_k'], best_performance[0], self.config['top_k'], best_performance[1], self.config['top_k'], best_performance[2], self.config['top_k'], best_performance[3], self.config['top_k'], best_performance[4], self.config['top_k'], best_performance[5], self.config['top_k'], best_performance[6])
             save_checkpoint(best_model, model_dir)
-        return best_model, best_performance
+        return best_model, best_performance, best_ndcg
 
     def load_model(self, test_model_path):
         resume_checkpoint(self.model, test_model_path, self.config['device_id'])

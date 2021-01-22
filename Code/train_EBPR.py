@@ -7,7 +7,7 @@ dataset_name = 'ml-100k'  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Moviel
 dataset = read_data(dataset_name)
 
 # Define hyperparameters
-config = {'model': 'UEBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
+config = {'model': 'EBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
           'dataset': dataset_name,
           'num_epoch': 50,  # Number of training epochs.
           'batch_size': 50,  # Batch size.
@@ -20,7 +20,7 @@ config = {'model': 'UEBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 
           'optimizer': 'adam',
           'num_users': len(dataset['userId'].unique()),
           'num_items': len(dataset['itemId'].unique()),
-          'test_rate': 0.2,  # Test rate for random train/test split. Used when 'loo_eval' is set to False.
+          'test_rate': 0.2,  # Test rate for random train/val/test split. test_rate is the rate of test + validation. Used when 'loo_eval' is set to False.
           'num_latent': 50,  # Number of latent factors.
           'weight_decay': 0,
           'l2_regularization': 0,
@@ -35,7 +35,8 @@ config = {'model': 'UEBPR',  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 
 
 # DataLoader
 sample_generator = SampleGenerator(dataset, config)
-evaluation_data = sample_generator.test_data_loader(config['batch_size'])
+test_data = sample_generator.test_data_loader(config['batch_size'])
+validation_data = sample_generator.val_data_loader(config['batch_size'])
 
 # Create explainability matrix
 explainability_matrix = sample_generator.create_explainability_matrix()
@@ -54,6 +55,7 @@ engine = BPREngine(config)
 
 # Initialize list of optimal results
 best_performance = [0] * 8
+best_ndcg = 0
 
 best_model = ''
 for epoch in range(config['num_epoch']):
@@ -61,10 +63,10 @@ for epoch in range(config['num_epoch']):
     train_loader = sample_generator.train_data_loader(config['batch_size'])
     engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
     if config['loo_eval']:
-        ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=epoch)
+        ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(validation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=epoch)
         print('-' * 80)
-        best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
+        best_model, best_performance, best_ndcg = engine.save_implicit(epoch, ndcg, config['num_epoch'], best_model, best_ndcg, best_performance, test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix)
     else:
-        map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(evaluation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=epoch)
+        map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(validation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=epoch)
         print('-' * 80)
-        best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
+        best_model, best_performance, best_ndcg = engine.save_explicit(epoch, ndcg, config['num_epoch'], best_model, best_ndcg, best_performance, test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix)
