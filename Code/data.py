@@ -16,17 +16,17 @@ def read_data(dataset_name):
     dataset = pd.DataFrame()
     if dataset_name == 'ml-100k':
         # Load Movielens 100K Data
-        data_dir = '../Data/ml-100k/u.data'
+        data_dir = 'Data/ml-100k/u.data'
         dataset = pd.read_csv(data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating', 'timestamp'],
                                   engine='python')
     elif dataset_name == 'ml-1m':
         # Load Movielens 1M Data
-        data_dir = '../Data/ml-1m/ratings.dat'
+        data_dir = 'Data/ml-1m/ratings.dat'
         dataset = pd.read_csv(data_dir, sep='::', header=None, names=['uid', 'mid', 'rating', 'timestamp'],  engine='python')
 
     elif dataset_name == 'lastfm-2k':
         # Load Last.FM 2K Data
-        data_dir = '../Data/lastfm-2k/user_artists.dat'
+        data_dir = 'Data/lastfm-2k/user_artists.dat'
         dataset = pd.read_csv(data_dir, sep='\t', header=0, names=['uid', 'mid', 'rating'],  engine='python')
         dataset['timestamp'] = [1 for i in range(len(dataset))]
         # Filtering items with more than 10 interactions (Uncomment to study the effect of data sparsity)
@@ -40,7 +40,7 @@ def read_data(dataset_name):
 
     elif dataset_name == 'yahoo-r3':
         # Load Yahoo! R3 Data
-        data_dir = '../Data/yahoo-r3/ydata-ymusic-rating-study-v1_0-train.txt'
+        data_dir = 'Data/yahoo-r3/ydata-ymusic-rating-study-v1_0-train.txt'
         dataset = pd.read_csv(data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating'],  engine='python')
         dataset['timestamp'] = [1 for i in range(len(dataset))]
 
