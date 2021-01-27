@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.metrics.pairwise import cosine_similarity
 
-random.seed(0)
+random.seed(1)
 
 def read_data(dataset_name):
     """Read dataset"""
@@ -115,11 +115,12 @@ class data_loader_negatives(Dataset):
 class SampleGenerator(object):
     """Construct dataset"""
 
-    def __init__(self, ratings, config):
+    def __init__(self, ratings, config, split_val):
         """
         args:
             ratings: pd.DataFrame containing 4 columns = ['userId', 'itemId', 'rating', 'timestamp']
             config: dictionary containing the configuration hyperparameters
+            split_val: boolean that takes True if we are using a validation set
         """
         assert 'userId' in ratings.columns
         assert 'itemId' in ratings.columns
@@ -127,16 +128,23 @@ class SampleGenerator(object):
 
         self.config = config
         self.ratings = ratings
+        self.split_val = split_val
         self.preprocess_ratings = self._binarize(ratings)
         self.user_pool = set(self.ratings['userId'].unique())
         self.item_pool = set(self.ratings['itemId'].unique())
         # create negative item samples
-        self.negatives = self._sample_negative(ratings)
+        self.negatives = self._sample_negative(ratings, self.split_val)
         if self.config['loo_eval']:
-            self.train_ratings, self.val_ratings, self.test_ratings = self._split_loo(self.preprocess_ratings)
+            if self.split_val:
+                self.train_ratings, self.val_ratings = self._split_loo(self.preprocess_ratings, split_val=True)
+            else:
+                self.train_ratings, self.test_ratings = self._split_loo(self.preprocess_ratings, split_val=False)
         else:
             self.test_rate = self.config['test_rate']
-            self.train_ratings, self.val_ratings, self.test_ratings = self.train_test_split_random(self.preprocess_ratings)
+            if self.split_val:
+                self.train_ratings, self.val_ratings = self.train_test_split_random(self.preprocess_ratings, split_val=True)
+            else:
+                self.train_ratings, self.test_ratings = self.train_test_split_random(self.preprocess_ratings, split_val=False)
 
     def _binarize(self, ratings):
         """binarize into 0 or 1 for imlicit feedback"""
@@ -144,32 +152,42 @@ class SampleGenerator(object):
         ratings['rating'] = 1.0
         return ratings
 
-    def train_test_split_random(self, ratings):
+    def train_test_split_random(self, ratings, split_val):
         """Random train/test split"""
         train, test = train_test_split(ratings, test_size=self.test_rate)
-        test, val = train_test_split(test, test_size=0.5)
-        return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
+        if split_val:
+            train, val = train_test_split(train, test_size=self.test_rate / (1 - self.test_rate))
+            return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']]
+        else:
+            return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
 
-    def _split_loo(self, ratings):
+    def _split_loo(self, ratings, split_val):
         """leave-one-out train/test split"""
         ratings['rank_latest'] = ratings.groupby(['userId'])['timestamp'].rank(method='first', ascending=False)
         test = ratings[ratings['rank_latest'] == 1]
-        val = ratings[ratings['rank_latest'] == 2]
-        train = ratings[ratings['rank_latest'] > 2]
-        assert train['userId'].nunique() == test['userId'].nunique() == val['userId'].nunique()
-        return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
+        if split_val:
+            val = ratings[ratings['rank_latest'] == 2]
+            train = ratings[ratings['rank_latest'] > 2]
+            assert train['userId'].nunique() == test['userId'].nunique() == val['userId'].nunique()
+            return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']]
+        else:
+            train = ratings[ratings['rank_latest'] > 1]
+            assert train['userId'].nunique() == test['userId'].nunique()
+            return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
 
-    def _sample_negative(self, ratings):
+    def _sample_negative(self, ratings, split_val):
         """return all negative items & 100 sampled negative test items & 100 sampled negative val items"""
         interact_status = ratings.groupby('userId')['itemId'].apply(set).reset_index().rename(
             columns={'itemId': 'interacted_items'})
         interact_status['negative_items'] = interact_status['interacted_items'].apply(lambda x: self.item_pool - x)
         interact_status['test_negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 100))
         interact_status['negative_items'] = interact_status.apply(lambda x: (x.negative_items - set(x.test_negative_samples)), axis=1)
-        interact_status['val_negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 100))
-        interact_status['negative_items'] = interact_status.apply(
-            lambda x: (x.negative_items - set(x.val_negative_samples)), axis=1)
-        return interact_status[['userId', 'negative_items', 'test_negative_samples', 'val_negative_samples']]
+        if split_val:
+            interact_status['val_negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 100))
+            interact_status['negative_items'] = interact_status.apply(lambda x: (x.negative_items - set(x.val_negative_samples)), axis=1)
+            return interact_status[['userId', 'negative_items', 'test_negative_samples', 'val_negative_samples']]
+        else:
+            return interact_status[['userId', 'negative_items', 'test_negative_samples']]
 
     def train_data_loader(self, batch_size):
         """instance train loader for one training epoch"""
@@ -227,7 +245,7 @@ class SampleGenerator(object):
                                                       item_neg_tensor=torch.LongTensor(negative_items))
             return [DataLoader(dataset, batch_size=batch_size, shuffle=False), DataLoader(dataset_negatives, batch_size=batch_size, shuffle=False)]
         else:
-            val_ratings = self.test_ratings
+            val_ratings = self.val_ratings
             val_users = [int(x) for x in val_ratings['userId']]
             val_items = [int(x) for x in val_ratings['itemId']]
             val_ratings = [float(x) for x in val_ratings['rating']]
@@ -248,10 +266,20 @@ class SampleGenerator(object):
             for missing_row in missing_rows:
                 interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
             interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
-        else:
+        elif not self.split_val:
             print('Creating test explainability matrix...')
             interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
                                               list(range(self.config['num_items']))].sort_index())
+        else:
+            print('Creating val explainability matrix...')
+            interaction_matrix = pd.crosstab(self.train_ratings.userId.append(self.val_ratings.userId), self.train_ratings.itemId.append(self.val_ratings.itemId))
+            missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
+            missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
+            for missing_column in missing_columns:
+                interaction_matrix[missing_column] = [0] * len(interaction_matrix)
+            for missing_row in missing_rows:
+                interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
+            interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
         #item_similarity_matrix = 1 - pairwise_distances(interaction_matrix.T, metric = "hamming")
         item_similarity_matrix = cosine_similarity(interaction_matrix.T)
         np.fill_diagonal(item_similarity_matrix, 0)
@@ -276,10 +304,21 @@ class SampleGenerator(object):
             for missing_row in missing_rows:
                 interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
             interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
-        else:
+        elif not self.split_val:
             print('Creating test popularity vector...')
             interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
                                               list(range(self.config['num_items']))].sort_index())
+        else:
+            print('Creating val popularity vector...')
+            interaction_matrix = pd.crosstab(self.train_ratings.userId.append(self.val_ratings.userId),
+                                             self.train_ratings.itemId.append(self.val_ratings.itemId))
+            missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
+            missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
+            for missing_column in missing_columns:
+                interaction_matrix[missing_column] = [0] * len(interaction_matrix)
+            for missing_row in missing_rows:
+                interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
+            interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
         popularity_vector = np.sum(interaction_matrix, axis=0)
         popularity_vector = (popularity_vector / max(popularity_vector)) ** 0.5
         return popularity_vector
@@ -296,10 +335,21 @@ class SampleGenerator(object):
             for missing_row in missing_rows:
                 interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
             interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
-        else:
+        elif not self.split_val:
             print('Determining test item neighborhoods...')
             interaction_matrix = np.array(pd.crosstab(self.preprocess_ratings.userId, self.preprocess_ratings.itemId)[
                                               list(range(self.config['num_items']))].sort_index())
+        else:
+            print('Determining val item neighborhoods...')
+            interaction_matrix = pd.crosstab(self.train_ratings.userId.append(self.val_ratings.userId),
+                                             self.train_ratings.itemId.append(self.val_ratings.itemId))
+            missing_columns = list(set(range(self.config['num_items'])) - set(list(interaction_matrix)))
+            missing_rows = list(set(range(self.config['num_users'])) - set(interaction_matrix.index))
+            for missing_column in missing_columns:
+                interaction_matrix[missing_column] = [0] * len(interaction_matrix)
+            for missing_row in missing_rows:
+                interaction_matrix.loc[missing_row] = [0] * self.config['num_items']
+            interaction_matrix = np.array(interaction_matrix[list(range(self.config['num_items']))].sort_index())
         item_similarity_matrix = cosine_similarity(interaction_matrix.T)
         np.fill_diagonal(item_similarity_matrix, 0)
         neighborhood = np.array([np.argpartition(row, - self.config['neighborhood'])[- self.config['neighborhood']:]

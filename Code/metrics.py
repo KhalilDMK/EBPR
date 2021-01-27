@@ -147,5 +147,6 @@ class MetronAtK(object):
             rec_items_for_users = [list(full.loc[full['user'] == u]['item']) for u in users]
         else:
             rec_items_for_users = [list(full.loc[full['user'] == u]['test_item']) for u in users]
+            rec_items_for_users = [x for x in rec_items_for_users if len(x) > 1]
         item_combinations = [set(combinations(rec_items_for_user, 2)) for rec_items_for_user in rec_items_for_users]
         return np.mean([np.mean([item_similarity_matrix[i, j] for (i, j) in item_combinations[k]]) for k in range(len(item_combinations))])
