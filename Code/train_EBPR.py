@@ -66,11 +66,11 @@ def main(args):
         if config['loo_eval']:
             ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=str(epoch) + ' on test data')
             print('-' * 80)
-            best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
+            best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance, save_models = args.save_models)
         else:
             map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=str(epoch) + ' on test data')
             print('-' * 80)
-            best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
+            best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance, save_models = args.save_models)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training script.")
@@ -101,6 +101,8 @@ if __name__ == "__main__":
                                                                             "to False.")
     parser.add_argument("--use_cuda", type=lambda x: (str(x).lower() == 'true'), default=True, help="True is you want to use a CUDA device.")
     parser.add_argument("--device_id", type=int, default=0, help="ID of CUDA device if 'use_cuda' is True.")
+    parser.add_argument("--save_models", type=lambda x: (str(x).lower() == 'true'), default=True,
+                        help="True if you want to save the best model(s).")
 
     args = parser.parse_args()
     main(args)
