@@ -98,7 +98,7 @@ def main(args):
                                                                                       val_item_similarity_matrix,
                                                                                       epoch_id=str(epoch) + ' on val data')
                     print('-' * 80)
-                    best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
+                    best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance, save_models = args.save_models)
                 else:
                     map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(validation_data,
                                                                                        val_explainability_matrix,
@@ -106,7 +106,7 @@ def main(args):
                                                                                        val_item_similarity_matrix,
                                                                                        epoch_id=str(epoch) + ' on val data')
                     print('-' * 80)
-                    best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
+                    best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance, save_models = args.save_models)
 
             # Save results to dataframe
             if config['loo_eval']:
@@ -123,7 +123,9 @@ def main(args):
                     ignore_index=True)
 
     # Save dataframe
-    results.to_csv('Output/Hyperparameter_tuning_' + model_name + '_' + dataset_name + '.csv')
+    print(results)
+    if args.save_results:
+        results.to_csv('Output/Hyperparameter_tuning_' + model_name + '_' + dataset_name + '.csv')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training script.")
@@ -152,8 +154,10 @@ if __name__ == "__main__":
                                                                             "split. test_rate is the rate of test and "
                                                                             "validation. Used when 'loo_eval' is set "
                                                                             "to False.")
-    parser.add_argument("--use_cuda", type=lambda x: (str(x).lower() == 'true'), default=True, help="True is you want to use a CUDA device.")
+    parser.add_argument("--use_cuda", type=lambda x: (str(x).lower() == 'true'), default=True, help="True if you want to use a CUDA device.")
     parser.add_argument("--device_id", type=int, default=0, help="ID of CUDA device if 'use_cuda' is True.")
+    parser.add_argument("--save_models", type=lambda x: (str(x).lower() == 'true'), default=True, help="True if you want to save the best model(s).")
+    parser.add_argument("--save_results", type=lambda x: (str(x).lower() == 'true'), default=True, help="True if you want to save the results in a csv file.")
 
     args = parser.parse_args()
     main(args)
