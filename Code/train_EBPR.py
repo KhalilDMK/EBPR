@@ -36,9 +36,8 @@ def main(args):
               'model_dir_implicit':'Output/checkpoints/{}_Epoch{}_NDCG@{}_{:.4f}_HR@{}_{:.4f}_MEP@{}_{:.4f}_WMEP@{}_{:.4f}_Avg_Pop@{}_{:.4f}_EFD@{}_{:.4f}_Avg_Pair_Sim@{}_{:.4f}.model'}
 
     # DataLoader
-    sample_generator = SampleGenerator(dataset, config)
+    sample_generator = SampleGenerator(dataset, config, split_val=False)
     test_data = sample_generator.test_data_loader(config['batch_size'])
-    validation_data = sample_generator.val_data_loader(config['batch_size'])
 
     # Create explainability matrix
     explainability_matrix = sample_generator.create_explainability_matrix()
@@ -65,13 +64,13 @@ def main(args):
         train_loader = sample_generator.train_data_loader(config['batch_size'])
         engine.train_an_epoch(train_loader, explainability_matrix, popularity_vector, neighborhood, epoch_id=epoch)
         if config['loo_eval']:
-            ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(validation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=str(epoch) + ' on val data')
+            ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=str(epoch) + ' on test data')
             print('-' * 80)
-            best_model, best_performance, best_ndcg = engine.save_implicit(epoch, ndcg, config['num_epoch'], best_model, best_ndcg, best_performance, test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix)
+            best_model, best_performance = engine.save_implicit(epoch, ndcg, hr, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
         else:
-            map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(validation_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=str(epoch) + ' on val data')
+            map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim = engine.evaluate(test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix, epoch_id=str(epoch) + ' on test data')
             print('-' * 80)
-            best_model, best_performance, best_ndcg = engine.save_explicit(epoch, ndcg, config['num_epoch'], best_model, best_ndcg, best_performance, test_data, test_explainability_matrix, test_popularity_vector, test_item_similarity_matrix)
+            best_model, best_performance = engine.save_explicit(epoch, map, ndcg, mep, wmep, avg_pop, efd, avg_pair_sim, config['num_epoch'], best_model, best_performance)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training script.")
@@ -94,13 +93,13 @@ if __name__ == "__main__":
     parser.add_argument("--sgd_momentum", type =float, default=0.9, help="Momentum for SGD optimizer.")
     parser.add_argument("--rmsprop_alpha", type =float, default=0.9, help="alpha hyperparameter for RMSProp optimizer.")
     parser.add_argument("--rmsprop_momentum", type =float, default=0.0, help="Momentum for RMSProp optimizer.")
-    parser.add_argument("--loo_eval", type=bool, default=True, help="True: LOO evaluation. False: Random "
+    parser.add_argument("--loo_eval", type=lambda x: (str(x).lower() == 'true'), default=True, help="True: LOO evaluation. False: Random "
                                                                             "train/test split")
     parser.add_argument("--test_rate", type=float, default=0.2, help="Test rate for random train/val/test "
                                                                             "split. test_rate is the rate of test + "
                                                                             "validation. Used when 'loo_eval' is set "
                                                                             "to False.")
-    parser.add_argument("--use_cuda", type=bool, default=True, help="True is you want to use a CUDA device.")
+    parser.add_argument("--use_cuda", type=lambda x: (str(x).lower() == 'true'), default=True, help="True is you want to use a CUDA device.")
     parser.add_argument("--device_id", type=int, default=0, help="ID of CUDA device if 'use_cuda' is True.")
 
     args = parser.parse_args()
