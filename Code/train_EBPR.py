@@ -6,7 +6,7 @@ def main(args):
     # Read dataset
     dataset_name = args.dataset  # 'ml-100k' for Movielens 100K. 'ml-1m' for the Movielens 1M dataset. 'lastfm-2k' for the
     # Last.FM 2K dataset. 'yahoo-r3' for the Yahoo! R3 dataset.
-    dataset = read_data(dataset_name)
+    dataset = read_data(dataset_name, args.int_per_item)
 
     # Define hyperparameters
     config = {'model': args.model,  # Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR', 'UEBPR'.
@@ -103,6 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("--device_id", type=int, default=0, help="ID of CUDA device if 'use_cuda' is True.")
     parser.add_argument("--save_models", type=lambda x: (str(x).lower() == 'true'), default=True,
                         help="True if you want to save the best model(s).")
+    parser.add_argument("--int_per_item", type =int, default=0, help="Minimum number of interactions per item for studying effect sparsity on the lastfm-2k dataset.")
 
     args = parser.parse_args()
     main(args)
