@@ -4,7 +4,7 @@ Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from 
 This is an anonymous copy of the private Github repository for The Web Conference submission.
 
 ## Environment settings
-We use Pytorch 1.1.0.
+We use Pytorch 1.7.1.
 
 ## Description
 This repository includes the code necessary to:
