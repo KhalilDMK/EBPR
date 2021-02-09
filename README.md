@@ -11,27 +11,23 @@ This repository includes the code necessary to:
 * <b>Train BPR [1], UBPR [2], EBPR, pUEBPR and UEBPR:</b>
 
 ```
-python -m Code.train_EBPR
+python -m Code.train_EBPR [-h] [--model MODEL] [--dataset DATASET]
+                          [--num_epoch NUM_EPOCH] [--batch_size BATCH_SIZE]
+                          [--num_latent NUM_LATENT]
+                          [--l2_regularization L2_REGULARIZATION]
+                          [--weight_decay WEIGHT_DECAY]
+                          [--neighborhood NEIGHBORHOOD] [--top_k TOP_K] [--lr LR]
+                          [--optimizer OPTIMIZER] [--sgd_momentum SGD_MOMENTUM]
+                          [--rmsprop_alpha RMSPROP_ALPHA]
+                          [--rmsprop_momentum RMSPROP_MOMENTUM]
+                          [--loo_eval LOO_EVAL] [--test_rate TEST_RATE]
+                          [--use_cuda USE_CUDA] [--device_id DEVICE_ID]
+                          [--save_models SAVE_MODELS] [--int_per_item INT_PER_ITEM]
 ```
 
 The code is set up to train EBPR on the Movielens 100K dataset. You can change the model using the "model" argument. Also, you can change the "dataset" argument to choose between the "Movielens 100K", "Movielens 1M", "Yahoo! R3" or "Last.FM 2K" datasets. The model will train and output the NDCG@K, HR@K, MEP@K and WMEP@K results on the test set for every epoch using the Leave-One-Out (LOO) evaluation procedure. You can choose the standard random train/test split by changing the parameter "loo_eval" in the "config" dictionary. The list of arguments is presented below:
 
 ```
-usage: train_EBPR.py [-h] [--model MODEL] [--dataset DATASET]
-                     [--num_epoch NUM_EPOCH] [--batch_size BATCH_SIZE]
-                     [--num_latent NUM_LATENT]
-                     [--l2_regularization L2_REGULARIZATION]
-                     [--weight_decay WEIGHT_DECAY]
-                     [--neighborhood NEIGHBORHOOD] [--top_k TOP_K] [--lr LR]
-                     [--optimizer OPTIMIZER] [--sgd_momentum SGD_MOMENTUM]
-                     [--rmsprop_alpha RMSPROP_ALPHA]
-                     [--rmsprop_momentum RMSPROP_MOMENTUM]
-                     [--loo_eval LOO_EVAL] [--test_rate TEST_RATE]
-                     [--use_cuda USE_CUDA] [--device_id DEVICE_ID]
-                     [--save_models SAVE_MODELS] [--int_per_item INT_PER_ITEM]
-
-Training script.
-
 optional arguments:
   -h, --help            show this help message and exit
   --model MODEL         Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR',
@@ -80,29 +76,25 @@ optional arguments:
 * <b>Tune the hyperparameters of the models:</b>
 
 ```
-python -m Code.hyperparameter_tuning
+python -m Code.hyperparameter_tuning [-h] [--model MODEL] [--dataset DATASET]
+                                     [--num_configurations NUM_CONFIGURATIONS]
+                                     [--num_reps NUM_REPS] [--num_epoch NUM_EPOCH]
+                                     [--weight_decay WEIGHT_DECAY]
+                                     [--neighborhood NEIGHBORHOOD] [--top_k TOP_K]
+                                     [--lr LR] [--optimizer OPTIMIZER]
+                                     [--sgd_momentum SGD_MOMENTUM]
+                                     [--rmsprop_alpha RMSPROP_ALPHA]
+                                     [--rmsprop_momentum RMSPROP_MOMENTUM]
+                                     [--loo_eval LOO_EVAL] [--test_rate TEST_RATE]
+                                     [--use_cuda USE_CUDA] [--device_id DEVICE_ID]
+                                     [--save_models SAVE_MODELS]
+                                     [--save_results SAVE_RESULTS]
+                                     [--int_per_item INT_PER_ITEM]
 ```
 
 Similarly, you can choose the dataset and the model. The code is set to perform a random hyperparameter tuning as presented in the paper. You can choose the number of experiments and replicates of each experiment. The hyperparameters tuned are the number of latent features, batch size and l2 regularization. The list of arguments is presented below:
 
 ```
-usage: hyperparameter_tuning.py [-h] [--model MODEL] [--dataset DATASET]
-                                [--num_configurations NUM_CONFIGURATIONS]
-                                [--num_reps NUM_REPS] [--num_epoch NUM_EPOCH]
-                                [--weight_decay WEIGHT_DECAY]
-                                [--neighborhood NEIGHBORHOOD] [--top_k TOP_K]
-                                [--lr LR] [--optimizer OPTIMIZER]
-                                [--sgd_momentum SGD_MOMENTUM]
-                                [--rmsprop_alpha RMSPROP_ALPHA]
-                                [--rmsprop_momentum RMSPROP_MOMENTUM]
-                                [--loo_eval LOO_EVAL] [--test_rate TEST_RATE]
-                                [--use_cuda USE_CUDA] [--device_id DEVICE_ID]
-                                [--save_models SAVE_MODELS]
-                                [--save_results SAVE_RESULTS]
-                                [--int_per_item INT_PER_ITEM]
-
-Training script.
-
 optional arguments:
   -h, --help            show this help message and exit
   --model MODEL         Model to train: 'BPR', 'UBPR', 'EBPR', 'pUEBPR',
