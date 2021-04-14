@@ -44,6 +44,17 @@ def read_data(dataset_name, int_per_item):
         dataset = pd.read_csv(data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating'],  engine='python')
         dataset['timestamp'] = [1 for i in range(len(dataset))]
 
+    elif dataset_name == 'yahoo-r3-unbiased':
+        # Load Yahoo! R3 Data
+        data_dir = 'Data/yahoo-r3/ydata-ymusic-rating-study-v1_0-train.txt'
+        test_data_dir = 'Data/yahoo-r3/ydata-ymusic-rating-study-v1_0-test.txt'
+        dataset = pd.read_csv(data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating'],  engine='python')
+        dataset['test'] = [0 for i in range(len(dataset))]
+        test_dataset = pd.read_csv(test_data_dir, sep='\t', header=None, names=['uid', 'mid', 'rating'],  engine='python')
+        test_dataset['test'] = [1 for i in range(len(test_dataset))]
+        dataset = pd.concat([dataset, test_dataset])
+        dataset['timestamp'] = [1 for i in range(len(dataset))]
+
     # Reindex data
     user_id = dataset[['uid']].drop_duplicates().reindex()
     user_id['userId'] = np.arange(len(user_id))
@@ -51,7 +62,10 @@ def read_data(dataset_name, int_per_item):
     item_id = dataset[['mid']].drop_duplicates()
     item_id['itemId'] = np.arange(len(item_id))
     dataset = pd.merge(dataset, item_id, on=['mid'], how='left')
-    dataset = dataset[['userId', 'itemId', 'rating', 'timestamp']]
+    if 'test' in dataset:
+        dataset = dataset[['userId', 'itemId', 'rating', 'timestamp', 'test']]
+    else:
+        dataset = dataset[['userId', 'itemId', 'rating', 'timestamp']]
 
     return dataset
 
@@ -163,6 +177,15 @@ class SampleGenerator(object):
 
     def _split_loo(self, ratings, split_val):
         """leave-one-out train/test split"""
+        if 'test' in list(ratings):
+            test = ratings[ratings['test'] == 1]
+            ratings = ratings[ratings['test'] == 0]
+            if split_val:
+                ratings['rank_latest'] = ratings.groupby(['userId'])['timestamp'].rank(method='first', ascending=False)
+                val = ratings[ratings['rank_latest'] == 1]
+                train = ratings[ratings['rank_latest'] > 1]
+                return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']]
+            return ratings[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
         ratings['rank_latest'] = ratings.groupby(['userId'])['timestamp'].rank(method='first', ascending=False)
         test = ratings[ratings['rank_latest'] == 1]
         if split_val:
@@ -170,10 +193,9 @@ class SampleGenerator(object):
             train = ratings[ratings['rank_latest'] > 2]
             assert train['userId'].nunique() == test['userId'].nunique() == val['userId'].nunique()
             return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']]
-        else:
-            train = ratings[ratings['rank_latest'] > 1]
-            assert train['userId'].nunique() == test['userId'].nunique()
-            return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
+        train = ratings[ratings['rank_latest'] > 1]
+        assert train['userId'].nunique() == test['userId'].nunique()
+        return train[['userId', 'itemId', 'rating']], test[['userId', 'itemId', 'rating']]
 
     def _sample_negative(self, ratings, split_val):
         """return all negative items & 100 sampled negative test items & 100 sampled negative val items"""
