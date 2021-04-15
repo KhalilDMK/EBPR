@@ -156,9 +156,9 @@ class SampleGenerator(object):
         else:
             self.test_rate = self.config['test_rate']
             if self.split_val:
-                self.train_ratings, self.val_ratings = self.train_test_split_random(self.preprocess_ratings, split_val=True)
+                self.train_ratings, self.val_ratings = self.train_test_split_random(self.ratings, split_val=True)
             else:
-                self.train_ratings, self.test_ratings = self.train_test_split_random(self.preprocess_ratings, split_val=False)
+                self.train_ratings, self.test_ratings = self.train_test_split_random(self.ratings, split_val=False)
 
     def _binarize(self, ratings):
         """binarize into 0 or 1 for imlicit feedback"""
@@ -168,7 +168,11 @@ class SampleGenerator(object):
 
     def train_test_split_random(self, ratings, split_val):
         """Random train/test split"""
-        train, test = train_test_split(ratings, test_size=self.test_rate)
+        if 'test' in list(ratings):
+            test = ratings[ratings['test'] == 1]
+            train = ratings[ratings['test'] == 0]
+        else:
+            train, test = train_test_split(ratings, test_size=self.test_rate)
         if split_val:
             train, val = train_test_split(train, test_size=self.test_rate / (1 - self.test_rate))
             return train[['userId', 'itemId', 'rating']], val[['userId', 'itemId', 'rating']]
