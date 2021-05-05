@@ -1,7 +1,7 @@
 # EBPR
 Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from Implicit Feedback".
 
-This is an anonymous copy of the private Github repository for The Web Conference submission.
+This is an anonymous copy of the private Github repository for RecSys submission.
 
 ## Environment settings
 We use Pytorch 1.7.1.
