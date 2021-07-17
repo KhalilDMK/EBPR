@@ -1,5 +1,6 @@
 # Debiased Explainable Pairwise Ranking from Implicit Feedback
-Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from Implicit Feedback".
+Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from Implicit Feedback".<br>
+Accepted at RecSys '21.
 
 ## Authors
 Khalil Damak, University of Louisville.<br>
