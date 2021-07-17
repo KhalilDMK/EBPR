@@ -1,7 +1,14 @@
-# EBPR
+# Debiased Explainable Pairwise Ranking from Implicit Feedback
 Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from Implicit Feedback".
 
-This is an anonymous copy of the private Github repository for RecSys submission.
+## Authors
+Khalil Damak, University of Louisville.
+Sami Khenissi, University of Louisville.
+Olfa Nasraoui, University of Louisville.
+
+## Abstract
+Recent work in recommender systems has emphasized the importance of fairness, with a particular interest in bias and transparency, in addition to predictive accuracy. In this paper, we focus on the state of the art pairwise ranking model, Bayesian Personalized Ranking (BPR), which has previously been found to  outperform pointwise models in predictive accuracy while also being able to handle implicit feedback. Specifically, we address two limitations of BPR: (1) BPR is a black box model that does not explain its outputs, thus limiting the user's trust in the recommendations, and the analyst's ability to scrutinize a model's outputs; and (2) BPR is vulnerable to exposure bias due to the data being Missing Not At Random (MNAR). This exposure bias usually translates into an unfairness against the least popular items because they risk being under-exposed by the recommender system.
+In this work, we first propose a novel explainable loss function and a corresponding Matrix Factorization-based model called Explainable Bayesian Personalized Ranking (EBPR) that generates recommendations along with item-based explanations. Then, we theoretically quantify  additional exposure bias resulting from the explainability, and use it as a basis to propose an unbiased estimator for the ideal EBPR loss. Finally, we perform an empirical study on three real-world datasets that demonstrate the advantages of our proposed models.
 
 ## Environment settings
 We use Pytorch 1.7.1.
