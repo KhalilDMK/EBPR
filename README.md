@@ -33,7 +33,7 @@ python -m Code.train_EBPR [-h] [--model MODEL] [--dataset DATASET]
                           [--save_models SAVE_MODELS] [--int_per_item INT_PER_ITEM]
 ```
 
-The code is set up to train EBPR on the Movielens 100K dataset. You can change the model using the "model" argument. Also, you can change the "dataset" argument to choose between the "Movielens 100K", "Movielens 1M", "Yahoo! R3" or "Last.FM 2K" datasets. The model will train and output the NDCG@K, HR@K, MEP@K, WMEP@K, Avg_Pop@K, EFD@K, and DIV@K results on the test set for every epoch using the Leave-One-Out (LOO) evaluation procedure. You can choose the standard random train/test split by changing the parameter "loo_eval" in the "config" dictionary. The list of arguments is presented below:
+The code is set up to train EBPR on the Movielens 100K dataset. You can change the model using the "model" argument. Also, you can change the "dataset" argument to choose between the "Movielens 100K", "Movielens 1M", "Yahoo! R3" or "Last.FM 2K" datasets. The model will train and output the NDCG@K, HR@K, MEP@K, WMEP@K, Avg_Pop@K, EFD@K, and Div@K results on the test set for every epoch using the Leave-One-Out (LOO) evaluation procedure. You can choose the standard random train/test split by changing the parameter "loo_eval" in the "config" dictionary. The list of arguments is presented below:
 
 ```
 optional arguments:
