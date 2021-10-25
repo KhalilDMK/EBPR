@@ -33,7 +33,7 @@ python -m Code.train_EBPR [-h] [--model MODEL] [--dataset DATASET]
                           [--save_models SAVE_MODELS] [--int_per_item INT_PER_ITEM]
 ```
 
-The code is set up to train EBPR on the Movielens 100K dataset. You can change the model using the "model" argument. Also, you can change the "dataset" argument to choose between the "Movielens 100K", "Movielens 1M", "Yahoo! R3" or "Last.FM 2K" datasets. The model will train and output the NDCG@K, HR@K, MEP@K and WMEP@K results on the test set for every epoch using the Leave-One-Out (LOO) evaluation procedure. You can choose the standard random train/test split by changing the parameter "loo_eval" in the "config" dictionary. The list of arguments is presented below:
+The code is set up to train EBPR on the Movielens 100K dataset. You can change the model using the "model" argument. Also, you can change the "dataset" argument to choose between the "Movielens 100K", "Movielens 1M", "Yahoo! R3" or "Last.FM 2K" datasets. The model will train and output the NDCG@K, HR@K, MEP@K, WMEP@K, Avg_Pop@K, EFD@K, and DIV@K results on the test set for every epoch using the Leave-One-Out (LOO) evaluation procedure. You can choose the standard random train/test split by changing the parameter "loo_eval" in the "config" dictionary. The list of arguments is presented below:
 
 ```
 optional arguments:
@@ -153,7 +153,7 @@ We provide code ready to run on the:
 * Last.FM 2K dataset.
 * Yahoo! R3 dataset.
 
-Note that, due to a privacy consent, you need to add the Yahoo! R3 dataset in a folder "Data/yahoo-r3" to be able to use it.
+Note that, due to a consent that prevents us from sharing the Yahoo! R3 dataset, you need to download and add the dataset in a folder "Data/yahoo-r3" to be able to use it.
 
 ## References
 [1] Rendle, Steffen, et al. "BPR: Bayesian personalized ranking from implicit feedback." arXiv preprint arXiv:1205.2618 (2012).<br>
