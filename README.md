@@ -2,6 +2,8 @@
 Pytorch implementation of the paper "Debiased Explainable Pairwise Ranking from Implicit Feedback".<br>
 Accepted at RecSys '21.
 
+Link to paper: https://arxiv.org/pdf/2107.14768.pdf
+
 ## Authors
 Khalil Damak, University of Louisville.<br>
 Sami Khenissi, University of Louisville.<br>
@@ -13,6 +15,20 @@ In this work, we first propose a novel explainable loss function and a correspon
 
 ## Environment settings
 We use Pytorch 1.7.1.
+
+## Citation
+@inbook{10.1145/3460231.3474274,
+author = {Damak, Khalil and Khenissi, Sami and Nasraoui, Olfa},
+title = {Debiased Explainable Pairwise Ranking from Implicit Feedback},
+year = {2021},
+isbn = {9781450384582},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3460231.3474274},
+booktitle = {Fifteenth ACM Conference on Recommender Systems},
+pages = {321–331},
+numpages = {11}
+}
 
 ## Description
 This repository includes the code necessary to:
