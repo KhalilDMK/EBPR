@@ -17,6 +17,7 @@ In this work, we first propose a novel explainable loss function and a correspon
 We use Pytorch 1.7.1.
 
 ## Citation
+```
 @inbook{10.1145/3460231.3474274,
 author = {Damak, Khalil and Khenissi, Sami and Nasraoui, Olfa},
 title = {Debiased Explainable Pairwise Ranking from Implicit Feedback},
@@ -29,6 +30,7 @@ booktitle = {Fifteenth ACM Conference on Recommender Systems},
 pages = {321–331},
 numpages = {11}
 }
+```
 
 ## Description
 This repository includes the code necessary to:
